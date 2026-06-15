@@ -4,3 +4,4 @@ recursive-include nexova_ai *.json
 recursive-include nexova_ai *.py
 include nexova_ai/modules.txt
 include nexova_ai/patches.txt
+include LICENSE

@@ -9,53 +9,62 @@ from frappe.utils import flt, getdate, nowdate
 @frappe.whitelist()
 def ask_ai(question: str | None = None) -> dict[str, Any]:
     """Return an MVP ERPNext answer using permission-aware Frappe APIs only."""
-    clean_question = (question or "").strip()
-    normalized = clean_question.lower()
+    try:
+        if not frappe.has_role("System Manager"):
+            return _permission_denied_response()
 
-    if not clean_question:
-        return _response("Please ask about today's sales, stock balance, or pending receivables.")
+        clean_question = (question or "").strip()
+        normalized = clean_question.lower()
 
-    if _matches(normalized, ("today", "sale")) or _matches(normalized, ("sales",)):
-        return _today_sales()
+        if not clean_question:
+            return _response("Please ask about today's sales, stock balance, or pending receivables.")
 
-    if _matches(normalized, ("stock", "balance")) or _matches(normalized, ("inventory",)):
-        return _stock_balance(clean_question)
+        if _matches(normalized, ("today", "sale")) or _matches(normalized, ("sales",)):
+            return _today_sales()
 
-    if _matches(normalized, ("pending", "receivable")) or _matches(normalized, ("outstanding",)):
-        return _pending_receivables()
+        if _matches(normalized, ("stock", "balance")) or _matches(normalized, ("inventory",)):
+            return _stock_balance(clean_question)
 
-    return _response(
-        "I can answer MVP questions about today's sales, stock balance, and pending receivables."
-    )
+        if _matches(normalized, ("pending", "receivable")) or _matches(normalized, ("outstanding",)):
+            return _pending_receivables()
+
+        return _response(
+            "I can answer MVP questions about today's sales, stock balance, and pending receivables."
+        )
+    except frappe.PermissionError:
+        return _permission_denied_response()
+    except Exception:
+        frappe.log_error(title="Nexova AI Error", message=frappe.get_traceback())
+        return _response("Something went wrong while asking ERPNext.")
 
 
 def _today_sales() -> dict[str, Any]:
     today = getdate(nowdate())
-    invoices = frappe.get_list(
+    invoices = _get_all_permission_aware(
         "Sales Invoice",
         filters={
             "docstatus": 1,
             "posting_date": today,
         },
-        fields=["name", "customer", "grand_total", "currency"],
+        fields=["grand_total", "currency"],
         order_by="posting_time desc, creation desc",
-        limit_page_length=100,
     )
 
-    total = sum(flt(row.get("grand_total")) for row in invoices)
-    currency = _first_value(invoices, "currency") or frappe.defaults.get_global_default("currency")
+    totals_by_currency = _sum_by_currency(invoices, "grand_total")
 
-    message = f"Today's submitted sales are {frappe.format_value(total, {'fieldtype': 'Currency', 'options': currency})} across {len(invoices)} invoice(s)."
+    if totals_by_currency:
+        totals_text = _format_currency_totals(totals_by_currency)
+        message = f"Today's submitted sales are {totals_text} across {len(invoices)} invoice(s)."
+    else:
+        message = "There are no submitted sales invoices for today."
 
     return _response(
         message,
         data={
             "type": "todays_sales",
             "date": str(today),
-            "total": total,
-            "currency": currency,
             "count": len(invoices),
-            "invoices": invoices[:10],
+            "totals_by_currency": totals_by_currency,
         },
     )
 
@@ -67,12 +76,11 @@ def _stock_balance(question: str) -> dict[str, Any]:
     if item_code:
         filters["item_code"] = item_code
 
-    bins = frappe.get_list(
+    bins = _get_all_permission_aware(
         "Bin",
         filters=filters,
-        fields=["item_code", "warehouse", "actual_qty", "projected_qty", "reserved_qty"],
+        fields=["actual_qty"],
         order_by="actual_qty desc",
-        limit_page_length=100,
     )
 
     total_actual = sum(flt(row.get("actual_qty")) for row in bins)
@@ -89,38 +97,65 @@ def _stock_balance(question: str) -> dict[str, Any]:
             "item_code": item_code,
             "total_actual_qty": total_actual,
             "count": len(bins),
-            "bins": bins[:20],
         },
     )
 
 
 def _pending_receivables() -> dict[str, Any]:
-    invoices = frappe.get_list(
+    invoices = _get_all_permission_aware(
         "Sales Invoice",
         filters={
             "docstatus": 1,
             "outstanding_amount": [">", 0],
         },
-        fields=["name", "customer", "posting_date", "due_date", "outstanding_amount", "currency"],
+        fields=["outstanding_amount", "currency"],
         order_by="due_date asc, posting_date asc",
-        limit_page_length=100,
     )
 
-    total = sum(flt(row.get("outstanding_amount")) for row in invoices)
-    currency = _first_value(invoices, "currency") or frappe.defaults.get_global_default("currency")
+    totals_by_currency = _sum_by_currency(invoices, "outstanding_amount")
 
-    message = f"Pending receivables are {frappe.format_value(total, {'fieldtype': 'Currency', 'options': currency})} across {len(invoices)} invoice(s)."
+    if totals_by_currency:
+        totals_text = _format_currency_totals(totals_by_currency)
+        message = f"Pending receivables are {totals_text} across {len(invoices)} invoice(s)."
+    else:
+        message = "There are no pending receivables."
 
     return _response(
         message,
         data={
             "type": "pending_receivables",
-            "total": total,
-            "currency": currency,
             "count": len(invoices),
-            "invoices": invoices[:20],
+            "totals_by_currency": totals_by_currency,
         },
     )
+
+
+def _get_all_permission_aware(
+    doctype: str,
+    *,
+    filters: dict[str, Any],
+    fields: list[str],
+    order_by: str | None = None,
+    page_length: int = 500,
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    start = 0
+
+    while True:
+        page = frappe.get_list(
+            doctype,
+            filters=filters,
+            fields=fields,
+            order_by=order_by,
+            limit_start=start,
+            limit_page_length=page_length,
+        )
+        rows.extend(page)
+
+        if len(page) < page_length:
+            return rows
+
+        start += page_length
 
 
 def _matches(text: str, words: tuple[str, ...]) -> bool:
@@ -139,12 +174,30 @@ def _extract_item_code(question: str) -> str | None:
     return None
 
 
-def _first_value(rows: list[dict[str, Any]], key: str) -> Any:
+def _sum_by_currency(rows: list[dict[str, Any]], amount_field: str) -> dict[str, float]:
+    fallback_currency = frappe.defaults.get_global_default("currency") or "Currency"
+    totals: dict[str, float] = {}
+
     for row in rows:
-        value = row.get(key)
-        if value:
-            return value
-    return None
+        currency = row.get("currency") or fallback_currency
+        totals[currency] = totals.get(currency, 0.0) + flt(row.get(amount_field))
+
+    return totals
+
+
+def _format_currency_totals(totals_by_currency: dict[str, float]) -> str:
+    formatted = []
+
+    for currency, total in sorted(totals_by_currency.items()):
+        formatted.append(
+            frappe.format_value(total, {"fieldtype": "Currency", "options": currency})
+        )
+
+    return ", ".join(formatted)
+
+
+def _permission_denied_response() -> dict[str, Any]:
+    return _response("You do not have permission to access this information.")
 
 
 def _response(message: str, data: dict[str, Any] | None = None) -> dict[str, Any]:

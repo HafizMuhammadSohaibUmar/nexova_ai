@@ -10,7 +10,11 @@
   "name": "nexova-ai",
   "owner": "Administrator",
   "page_name": "nexova-ai",
-  "roles": [],
+  "roles": [
+    {
+      "role": "System Manager"
+    }
+  ],
   "script": null,
   "standard": "Yes",
   "style": null,
