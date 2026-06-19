@@ -7,6 +7,7 @@ import frappe
 
 from nexova_ai.assistant.audit import log_request
 from nexova_ai.assistant.contracts import AssistantResult, response
+from nexova_ai.assistant.dynamic_tools import answer_dynamic_query, can_try_dynamic_query
 from nexova_ai.assistant.intent import detect_intent, detect_language, normalize_text
 from nexova_ai.assistant.navigation import resolve_navigation
 from nexova_ai.assistant.permissions import has_required_role
@@ -113,7 +114,12 @@ def _handle_question(clean_question: str, normalized: str, settings) -> Assistan
             tool_name=tool.name,
         )
 
+    if can_try_dynamic_query(clean_question):
+        dynamic_result = answer_dynamic_query(clean_question)
+        if dynamic_result:
+            return dynamic_result
+
     return response(
-        "I can help with ERP navigation, sales, purchases, stock, receivables, payables, customers, suppliers, items, orders, invoices, and approved knowledge sources.",
+        "I can help with ERP navigation, readable lists and counts, sales, purchases, stock, receivables, payables, customers, suppliers, items, orders, invoices, and approved knowledge sources.",
         intent="unknown",
     )

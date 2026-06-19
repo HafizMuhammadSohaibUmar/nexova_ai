@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from nexova_ai.assistant.contracts import NavigationTarget, response
+from nexova_ai.assistant.discovery import find_navigation_routes
 from nexova_ai.assistant.intent import normalize_text
 from nexova_ai.assistant.permissions import can_read_doctype
 
@@ -98,8 +99,12 @@ def resolve_navigation(question: str):
     ]
 
     if not matches:
+        dynamic_matches = find_navigation_routes(question)
+        if dynamic_matches:
+            return _navigation_response(dynamic_matches)
+
         return response(
-            "I can navigate to approved ERPNext lists, reports, and Nexova AI pages. Please name the area you want to open.",
+            "I can navigate to readable ERPNext lists, reports, workspaces, and Nexova AI pages. Please name the area you want to open.",
             status="Blocked",
             intent="navigation",
             data={"type": "navigation", "action": "clarify"},
@@ -128,6 +133,28 @@ def resolve_navigation(question: str):
         )
 
     target = readable[0]
+    return response(
+        f"Opening {target.label}.",
+        intent="navigation",
+        data={
+            "type": "navigation",
+            "action": "navigate",
+            "route": list(target.route),
+            "label": target.label,
+        },
+    )
+
+
+def _navigation_response(matches):
+    if len(matches) > 1:
+        labels = ", ".join(target.label for target in matches[:5])
+        return response(
+            f"I found multiple matching areas: {labels}. Please be more specific.",
+            intent="navigation",
+            data={"type": "navigation", "action": "clarify", "matches": [target.name for target in matches]},
+        )
+
+    target = matches[0]
     return response(
         f"Opening {target.label}.",
         intent="navigation",

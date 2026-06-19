@@ -1,0 +1,79 @@
+from __future__ import annotations
+
+from typing import Any
+
+import frappe
+
+from nexova_ai.assistant.contracts import response
+from nexova_ai.assistant.discovery import find_readable_doctype, safe_list_fields
+from nexova_ai.assistant.intent import normalize_text
+
+MAX_DYNAMIC_ROWS = 20
+
+
+def can_try_dynamic_query(question: str) -> bool:
+    text = normalize_text(question)
+    commands = (
+        "show",
+        "list",
+        "find",
+        "search",
+        "count",
+        "how many",
+        "kitne",
+        "kitni",
+        "dikhao",
+        "دکھاؤ",
+    )
+    return any(command in text for command in commands)
+
+
+def answer_dynamic_query(question: str):
+    doctype = find_readable_doctype(question)
+    if not doctype:
+        return None
+
+    text = normalize_text(question)
+    fields = safe_list_fields(doctype["name"])
+
+    if any(term in text for term in ("count", "how many", "kitne", "kitni")):
+        count = frappe.db.count(doctype["name"])
+        return response(
+            f"There are {count} readable {doctype['label']} record(s).",
+            intent="dynamic_count",
+            tool_name="dynamic_doctype_count",
+            data={
+                "type": "dynamic_count",
+                "doctype": doctype["name"],
+                "count": count,
+                "summary_cards": [{"label": "Records", "value": count}],
+            },
+        )
+
+    rows = frappe.get_list(
+        doctype["name"],
+        fields=fields,
+        order_by="modified desc",
+        limit_page_length=MAX_DYNAMIC_ROWS,
+    )
+
+    return response(
+        f"Showing {len(rows)} recent readable {doctype['label']} record(s).",
+        intent="dynamic_list",
+        tool_name="dynamic_doctype_list",
+        data={
+            "type": "dynamic_list",
+            "doctype": doctype["name"],
+            "count": len(rows),
+            "summary_cards": [{"label": "Records", "value": len(rows)}],
+            "table": _rows_table(doctype["label"], fields, rows),
+        },
+    )
+
+
+def _rows_table(label: str, fields: list[str], rows: list[dict[str, Any]]) -> dict[str, Any]:
+    return {
+        "title": f"Recent {label} Records",
+        "columns": [field.replace("_", " ").title() for field in fields],
+        "rows": [[row.get(field) or "" for field in fields] for row in rows[:10]],
+    }

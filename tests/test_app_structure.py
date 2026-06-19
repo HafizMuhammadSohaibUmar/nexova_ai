@@ -137,6 +137,8 @@ class AppStructureTest(unittest.TestCase):
             "rate_limit.py",
             "intent.py",
             "registry.py",
+            "discovery.py",
+            "dynamic_tools.py",
             "tools.py",
             "navigation.py",
             "rag.py",
@@ -207,6 +209,21 @@ class AppStructureTest(unittest.TestCase):
         self.assertIn("nexova-ai-result-card", css)
         self.assertIn("nexova-ai-result-table", css)
         self.assertIn("data.table.rows.slice(0, 10)", script)
+
+    def test_dynamic_discovery_foundation_exists(self) -> None:
+        discovery = (ASSISTANT / "discovery.py").read_text(encoding="utf-8")
+        dynamic_tools = (ASSISTANT / "dynamic_tools.py").read_text(encoding="utf-8")
+        navigation = (ASSISTANT / "navigation.py").read_text(encoding="utf-8")
+        orchestrator = (ASSISTANT / "orchestrator.py").read_text(encoding="utf-8")
+
+        self.assertIn("find_navigation_routes", discovery)
+        self.assertIn("find_readable_doctype", discovery)
+        self.assertIn("safe_list_fields", discovery)
+        self.assertIn("answer_dynamic_query", dynamic_tools)
+        self.assertIn("dynamic_doctype_list", dynamic_tools)
+        self.assertIn("dynamic_doctype_count", dynamic_tools)
+        self.assertIn("find_navigation_routes", navigation)
+        self.assertIn("answer_dynamic_query", orchestrator)
 
 
 if __name__ == "__main__":
