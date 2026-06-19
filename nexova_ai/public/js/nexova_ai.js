@@ -2,6 +2,10 @@ frappe.provide("frappe.pages");
 frappe.pages["nexova-ai-assistant"] = frappe.pages["nexova-ai-assistant"] || {};
 
 frappe.pages["nexova-ai-assistant"].on_page_load = function (wrapper) {
+  if ($(wrapper).find(".nexova-ai-page").length) {
+    return;
+  }
+
   const page = frappe.ui.make_app_page({
     parent: wrapper,
     title: __("Nexova AI"),
@@ -171,5 +175,11 @@ frappe.pages["nexova-ai-assistant"].on_page_load = function (wrapper) {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = frappe.boot.lang || navigator.language || "en-US";
     window.speechSynthesis.speak(utterance);
+  }
+};
+
+frappe.pages["nexova-ai-assistant"].on_page_show = function (wrapper) {
+  if (!$(wrapper).find(".nexova-ai-page").length) {
+    frappe.pages["nexova-ai-assistant"].on_page_load(wrapper);
   }
 };
