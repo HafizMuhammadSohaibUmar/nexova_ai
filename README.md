@@ -1,12 +1,13 @@
 # Nexova AI
 
-Custom Frappe app for ERPNext v15.90.1 / Frappe v15.90.0.
+Custom Frappe app for ERPNext. The current VM deployment is pinned to ERPNext/Frappe v15; v16 compatibility should be validated on a separate test branch and VM before upgrading production-like sites.
 
 This repository contains source files only. It does not modify ERPNext core, Docker files, or any existing ERPNext setup.
 
 ## MVP Features
 
-- Desk page: **Nexova AI**
+- Workspace: **Nexova AI**
+- Desk page: **Nexova AI Assistant**
 - Chat UI inside Frappe Desk
 - Browser voice input using the Web Speech API when supported
 - Text-to-speech replies using the browser Speech Synthesis API
@@ -36,7 +37,10 @@ bench --site your-site.local install-app nexova_ai
 
 ## Usage
 
-After installation, open Desk and search for **Nexova AI**.
+After installation, open:
+
+- Workspace: `/app/nexova-ai`
+- Assistant: `/app/nexova-ai-assistant`
 
 Example questions:
 
