@@ -88,6 +88,14 @@ class AppStructureTest(unittest.TestCase):
         self.assertNotIn("frappe.has_role", source)
         self.assertIn("frappe.get_roles()", source)
 
+    def test_api_accepts_common_receivables_voice_variants(self) -> None:
+        source = (APP / "api.py").read_text()
+
+        self.assertIn('"receiveables"', source)
+        self.assertIn('"recievables"', source)
+        self.assertIn('"recievable"', source)
+        self.assertIn('"unpaid"', source)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any
 
 import frappe
@@ -14,18 +15,18 @@ def ask_ai(question: str | None = None) -> dict[str, Any]:
             return _permission_denied_response()
 
         clean_question = (question or "").strip()
-        normalized = clean_question.lower()
+        normalized = _normalize_question(clean_question)
 
         if not clean_question:
             return _response("Please ask about today's sales, stock balance, or pending receivables.")
 
-        if _matches(normalized, ("today", "sale")) or _matches(normalized, ("sales",)):
+        if _is_today_sales_intent(normalized):
             return _today_sales()
 
-        if _matches(normalized, ("stock", "balance")) or _matches(normalized, ("inventory",)):
+        if _is_stock_balance_intent(normalized):
             return _stock_balance(clean_question)
 
-        if _matches(normalized, ("pending", "receivable")) or _matches(normalized, ("outstanding",)):
+        if _is_pending_receivables_intent(normalized):
             return _pending_receivables()
 
         return _response(
@@ -160,6 +161,44 @@ def _get_all_permission_aware(
 
 def _matches(text: str, words: tuple[str, ...]) -> bool:
     return all(word in text for word in words)
+
+
+def _contains_any(text: str, words: tuple[str, ...]) -> bool:
+    return any(word in text for word in words)
+
+
+def _normalize_question(question: str) -> str:
+    return re.sub(r"\s+", " ", re.sub(r"[^a-z0-9]+", " ", question.lower())).strip()
+
+
+def _is_today_sales_intent(text: str) -> bool:
+    return _contains_any(text, ("sale", "sales", "invoice", "invoices")) and _contains_any(
+        text,
+        ("today", "todays", "today s", "daily"),
+    )
+
+
+def _is_stock_balance_intent(text: str) -> bool:
+    return _matches(text, ("stock", "balance")) or _contains_any(
+        text,
+        ("inventory", "on hand", "available stock"),
+    )
+
+
+def _is_pending_receivables_intent(text: str) -> bool:
+    receivable_words = (
+        "receivable",
+        "receivables",
+        "receiveable",
+        "receiveables",
+        "recievable",
+        "recievables",
+        "outstanding",
+        "unpaid",
+        "amount due",
+    )
+
+    return _contains_any(text, receivable_words)
 
 
 def _has_role(role: str) -> bool:
