@@ -19,6 +19,7 @@ def get_client_config():
         settings.voice_provider,
         settings.stt_provider,
         settings.tts_provider,
+        settings.language_mode,
     )
 
     return {
@@ -31,6 +32,8 @@ def get_client_config():
             "voice_provider": voice.voice_provider,
             "stt_provider": voice.stt_provider,
             "tts_provider": voice.tts_provider,
+            "recognition_language": voice.recognition_language,
+            "supports_server_stt": voice.supports_server_stt,
             "raw_audio_retention": voice.raw_audio_retention,
         },
     }

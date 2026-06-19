@@ -4,6 +4,7 @@ from nexova_ai.assistant.contracts import NavigationTarget, response
 from nexova_ai.assistant.discovery import find_navigation_routes
 from nexova_ai.assistant.intent import normalize_text
 from nexova_ai.assistant.permissions import can_read_doctype
+from nexova_ai.assistant.vocabulary import fuzzy_match_score
 
 
 NAVIGATION_REGISTRY: tuple[NavigationTarget, ...] = (
@@ -95,7 +96,7 @@ def resolve_navigation(question: str):
     matches = [
         target
         for target in NAVIGATION_REGISTRY
-        if any(alias in text for alias in target.aliases)
+        if fuzzy_match_score(text, target.label, target.aliases) >= 45
     ]
 
     if not matches:

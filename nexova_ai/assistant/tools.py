@@ -12,6 +12,7 @@ from frappe.utils import flt, getdate, nowdate
 from nexova_ai.assistant.audit import log_tool_execution
 from nexova_ai.assistant.contracts import ToolSpec, response
 from nexova_ai.assistant.permissions import can_read_doctype
+from nexova_ai.assistant.vocabulary import canonical_text, contains_phrase
 
 MAX_ROWS = 500
 
@@ -303,7 +304,7 @@ def purchase_order_summary(question: str) -> dict[str, Any]:
 
 
 def invoice_summary(question: str) -> dict[str, Any]:
-    if "purchase" in question.lower():
+    if contains_phrase(question, "purchase"):
         return purchase_summary(question)
     return sales_summary(question)
 
@@ -461,7 +462,7 @@ def _document_context(question: str, *, date_field: str) -> QueryContext:
 
 
 def _date_range_from_question(question: str) -> tuple[str, date, date] | None:
-    text = question.lower()
+    text = canonical_text(question)
     today = getdate(nowdate())
 
     if any(term in text for term in ("today", "daily", "aaj", "آج")):
@@ -497,8 +498,8 @@ def _date_range_from_question(question: str) -> tuple[str, date, date] | None:
 
 
 def _is_top_request(question: str, dimensions: tuple[str, ...]) -> bool:
-    text = question.lower()
-    return "top" in text and any(dimension in text for dimension in dimensions)
+    text = canonical_text(question)
+    return contains_phrase(text, "top") and any(dimension in text for dimension in dimensions)
 
 
 def _top_party_totals(

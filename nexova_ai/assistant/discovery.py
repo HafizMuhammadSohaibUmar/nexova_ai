@@ -6,8 +6,12 @@ from typing import Any
 
 import frappe
 
-from nexova_ai.assistant.intent import normalize_text
 from nexova_ai.assistant.permissions import can_read_doctype
+from nexova_ai.assistant.vocabulary import (
+    business_aliases_for_label,
+    canonical_text,
+    fuzzy_match_score,
+)
 
 
 @dataclass(frozen=True)
@@ -20,7 +24,7 @@ class DiscoveredRoute:
 
 
 def find_navigation_routes(question: str, limit: int = 8) -> list[DiscoveredRoute]:
-    text = normalize_text(question)
+    text = canonical_text(question)
     routes: list[tuple[int, DiscoveredRoute]] = []
 
     for doctype in _readable_doctypes():
@@ -75,7 +79,7 @@ def find_navigation_routes(question: str, limit: int = 8) -> list[DiscoveredRout
 
 
 def find_readable_doctype(question: str) -> dict[str, Any] | None:
-    text = normalize_text(question)
+    text = canonical_text(question)
     matches = []
 
     for doctype in _readable_doctypes():
@@ -181,30 +185,12 @@ def _workspaces() -> list[dict[str, Any]]:
 
 
 def _aliases_for_label(label: str) -> tuple[str, ...]:
-    normalized = normalize_text(label)
-    compact = normalized.replace(" ", "")
-    singular = normalized[:-1] if normalized.endswith("s") else normalized
-    return tuple({normalized, compact, singular, normalized.replace(" invoice", " invoices")})
+    return business_aliases_for_label(label)
 
 
 def _match_score(text: str, label: str, aliases: tuple[str, ...]) -> int:
-    normalized_label = normalize_text(label)
-    words = tuple(word for word in normalized_label.split() if len(word) > 1)
-
-    if normalized_label and normalized_label in text:
-        return 100 + len(normalized_label)
-
-    for alias in aliases:
-        if alias and alias in text:
-            return 80 + len(alias)
-
-    if words and all(word in text for word in words):
-        return 60 + len(words)
-
-    if words and any(word in text for word in words):
-        return 20
-
-    return 0
+    score = fuzzy_match_score(text, label, aliases)
+    return score if score >= 45 else 0
 
 
 def _slug(value: str) -> str:

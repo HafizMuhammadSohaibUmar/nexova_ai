@@ -93,7 +93,7 @@ class AppStructureTest(unittest.TestCase):
         self.assertIn("frappe.get_roles()", source)
 
     def test_api_accepts_common_receivables_voice_variants(self) -> None:
-        source = (ASSISTANT / "intent.py").read_text(encoding="utf-8")
+        source = (ASSISTANT / "vocabulary.py").read_text(encoding="utf-8")
 
         self.assertIn('"receiveables"', source)
         self.assertIn('"recievables"', source)
@@ -136,6 +136,7 @@ class AppStructureTest(unittest.TestCase):
             "safety.py",
             "rate_limit.py",
             "intent.py",
+            "vocabulary.py",
             "registry.py",
             "discovery.py",
             "dynamic_tools.py",
@@ -219,11 +220,23 @@ class AppStructureTest(unittest.TestCase):
         self.assertIn("find_navigation_routes", discovery)
         self.assertIn("find_readable_doctype", discovery)
         self.assertIn("safe_list_fields", discovery)
+        self.assertIn("fuzzy_match_score", discovery)
         self.assertIn("answer_dynamic_query", dynamic_tools)
         self.assertIn("dynamic_doctype_list", dynamic_tools)
         self.assertIn("dynamic_doctype_count", dynamic_tools)
         self.assertIn("find_navigation_routes", navigation)
         self.assertIn("answer_dynamic_query", orchestrator)
+
+    def test_voice_strategy_reaches_frontend(self) -> None:
+        api = (APP / "api.py").read_text(encoding="utf-8")
+        voice = (ASSISTANT / "voice.py").read_text(encoding="utf-8")
+        script = (PAGE / "nexova_ai_assistant.js").read_text(encoding="utf-8")
+
+        self.assertIn("recognition_language", api)
+        self.assertIn("supports_server_stt", api)
+        self.assertIn("recognition_language", voice)
+        self.assertIn("maxAlternatives = 5", script)
+        self.assertIn("state.recognitionLanguage", script)
 
 
 if __name__ == "__main__":

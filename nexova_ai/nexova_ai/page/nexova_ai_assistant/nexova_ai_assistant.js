@@ -15,6 +15,7 @@ frappe.pages["nexova-ai-assistant"].on_page_load = function (wrapper) {
   const state = {
     listening: false,
     recognition: null,
+    recognitionLanguage: null,
     ttsEnabled: true,
     voiceEnabled: true,
   };
@@ -52,8 +53,7 @@ frappe.pages["nexova-ai-assistant"].on_page_load = function (wrapper) {
   const $tts = $root.find(".nexova-ai-tts");
 
   addMessage("assistant", __("Hi. Ask me about sales, purchases, stock, receivables, payables, customers, suppliers, items, orders, invoices, or ERPNext navigation."));
-  loadClientConfig();
-  setupSpeechRecognition();
+  loadClientConfig(setupSpeechRecognition);
 
   $root.find(".nexova-ai-composer").on("submit", function (event) {
     event.preventDefault();
@@ -215,7 +215,8 @@ frappe.pages["nexova-ai-assistant"].on_page_load = function (wrapper) {
     state.recognition = new SpeechRecognition();
     state.recognition.continuous = false;
     state.recognition.interimResults = false;
-    state.recognition.lang = frappe.boot.lang || navigator.language || "en-US";
+    state.recognition.maxAlternatives = 5;
+    state.recognition.lang = state.recognitionLanguage || frappe.boot.lang || navigator.language || "en-PK";
 
     state.recognition.onstart = function () {
       state.listening = true;
@@ -228,7 +229,11 @@ frappe.pages["nexova-ai-assistant"].on_page_load = function (wrapper) {
     };
 
     state.recognition.onresult = function (event) {
-      const transcript = event.results[0][0].transcript;
+      const alternatives = Array.from(event.results[0] || []);
+      const best = alternatives.sort(function (a, b) {
+        return (b.confidence || 0) - (a.confidence || 0);
+      })[0];
+      const transcript = best ? best.transcript : "";
       $input.val(transcript).focus();
       frappe.show_alert({
         message: __("Transcript ready. Review it, then tap Ask."),
@@ -258,18 +263,26 @@ frappe.pages["nexova-ai-assistant"].on_page_load = function (wrapper) {
     }, 400);
   }
 
-  function loadClientConfig() {
+  function loadClientConfig(done) {
     frappe.call({
       method: "nexova_ai.api.get_client_config",
       callback(response) {
         const config = response.message || {};
         state.voiceEnabled = config.voice_enabled !== false;
+        state.recognitionLanguage = config.voice && config.voice.recognition_language
+          ? config.voice.recognition_language
+          : null;
 
         if (!state.voiceEnabled) {
           $mic.prop("disabled", true).attr("title", __("Voice input is disabled for this site."));
           state.ttsEnabled = false;
           $tts.attr("aria-pressed", "false");
           $tts.text(__("Voice replies: Off"));
+        }
+      },
+      always() {
+        if (typeof done === "function") {
+          done();
         }
       },
     });

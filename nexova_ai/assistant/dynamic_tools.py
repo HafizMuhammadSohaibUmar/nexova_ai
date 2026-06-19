@@ -7,25 +7,14 @@ import frappe
 from nexova_ai.assistant.contracts import response
 from nexova_ai.assistant.discovery import find_readable_doctype, safe_list_fields
 from nexova_ai.assistant.intent import normalize_text
+from nexova_ai.assistant.vocabulary import contains_any_phrase
 
 MAX_DYNAMIC_ROWS = 20
+MAX_COUNT_SCAN = 500
 
 
 def can_try_dynamic_query(question: str) -> bool:
-    text = normalize_text(question)
-    commands = (
-        "show",
-        "list",
-        "find",
-        "search",
-        "count",
-        "how many",
-        "kitne",
-        "kitni",
-        "dikhao",
-        "دکھاؤ",
-    )
-    return any(command in text for command in commands)
+    return contains_any_phrase(question, ("list", "count", "navigation"))
 
 
 def answer_dynamic_query(question: str):
@@ -36,17 +25,17 @@ def answer_dynamic_query(question: str):
     text = normalize_text(question)
     fields = safe_list_fields(doctype["name"])
 
-    if any(term in text for term in ("count", "how many", "kitne", "kitni")):
-        count = frappe.db.count(doctype["name"])
+    if contains_any_phrase(text, ("count",)):
+        count = _count_readable(doctype["name"])
         return response(
-            f"There are {count} readable {doctype['label']} record(s).",
+            f"There are {count} readable {doctype['label']} record(s) in the bounded result.",
             intent="dynamic_count",
             tool_name="dynamic_doctype_count",
             data={
                 "type": "dynamic_count",
                 "doctype": doctype["name"],
                 "count": count,
-                "summary_cards": [{"label": "Records", "value": count}],
+                "summary_cards": [{"label": "Readable Records", "value": count}],
             },
         )
 
@@ -77,3 +66,14 @@ def _rows_table(label: str, fields: list[str], rows: list[dict[str, Any]]) -> di
         "columns": [field.replace("_", " ").title() for field in fields],
         "rows": [[row.get(field) or "" for field in fields] for row in rows[:10]],
     }
+
+
+def _count_readable(doctype: str) -> int:
+    return len(
+        frappe.get_list(
+            doctype,
+            fields=["name"],
+            limit_start=0,
+            limit_page_length=MAX_COUNT_SCAN,
+        )
+    )

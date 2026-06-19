@@ -2,21 +2,27 @@ from __future__ import annotations
 
 import re
 
+from nexova_ai.assistant.vocabulary import (
+    canonical_text,
+    contains_any_phrase,
+    contains_phrase,
+)
+
 
 def normalize_text(text: str) -> str:
-    cleaned = re.sub(r"[^\w\s]+", " ", (text or "").lower(), flags=re.UNICODE)
-    return re.sub(r"\s+", " ", cleaned).strip()
+    return canonical_text(text)
 
 
 def contains_any(text: str, words: tuple[str, ...]) -> bool:
-    return any(word in text for word in words)
+    normalized = normalize_text(text)
+    return any(word in normalized for word in words)
 
 
 def detect_language(text: str) -> str:
     if re.search(r"[\u0600-\u06ff]", text):
         return "ur"
 
-    roman_urdu_terms = ("mera", "meri", "kitna", "kitni", "kholo", "dikhao", "hisab")
+    roman_urdu_terms = ("mera", "meri", "kitna", "kitni", "kholo", "dikhao", "hisab", "wasooli")
     if contains_any(normalize_text(text), roman_urdu_terms):
         return "ur-roman"
 
@@ -26,52 +32,52 @@ def detect_language(text: str) -> str:
 def detect_intent(question: str) -> str:
     text = normalize_text(question)
 
-    if contains_any(text, ("open", "go to", "navigate", "kholo", "جاؤ", "کھولو")):
+    if contains_phrase(text, "navigation"):
         return "navigation"
 
-    if contains_any(text, ("knowledge", "policy", "sop", "manual", "document", "دستاویز", "پالیسی")):
+    if contains_phrase(text, "knowledge"):
         return "knowledge"
 
-    if contains_any(text, ("purchase", "buying", "khareed", "خرید")):
-        return "purchase_summary"
-
-    if contains_any(text, ("payable", "payables", "supplier due", "unpaid purchase", "ادا", "واجب الادا")):
+    if contains_phrase(text, "payables"):
         return "payables_summary"
 
-    if contains_any(text, ("receivable", "receivables", "receiveable", "receiveables", "recievable", "recievables", "outstanding", "unpaid", "amount due", "وصول", "بقایاجات")):
+    if contains_phrase(text, "receivables"):
         return "receivables_summary"
 
-    if contains_any(text, ("stock", "inventory", "on hand", "available stock", "maal", "گودام", "اسٹاک")):
-        return "stock_balance"
-
-    if "top" in text and contains_any(text, ("customer", "customers", "client", "clients")):
-        return "sales_summary"
-
-    if "top" in text and contains_any(text, ("supplier", "suppliers", "vendor", "vendors")):
+    if contains_phrase(text, "purchase"):
         return "purchase_summary"
 
-    if contains_any(text, ("customer", "customers", "client", "گاہک", "کسٹمر")):
+    if contains_phrase(text, "stock"):
+        return "stock_balance"
+
+    if contains_phrase(text, "top") and contains_phrase(text, "customer"):
+        return "sales_summary"
+
+    if contains_phrase(text, "top") and contains_phrase(text, "supplier"):
+        return "purchase_summary"
+
+    if contains_phrase(text, "customer"):
         return "customer_summary"
 
-    if contains_any(text, ("supplier", "vendor", "سپلائر")):
+    if contains_phrase(text, "supplier"):
         return "supplier_summary"
 
-    if contains_any(text, ("item", "product", "sku", "مصنوعات", "آئٹم")):
+    if contains_phrase(text, "item"):
         return "item_lookup"
 
-    if contains_any(text, ("quotation", "quote", "کوٹیشن")):
+    if contains_phrase(text, "quotation"):
         return "quotation_summary"
 
-    if contains_any(text, ("sales order", "sale order")):
+    if contains_phrase(text, "sales_order"):
         return "sales_order_summary"
 
-    if contains_any(text, ("purchase order",)):
+    if contains_phrase(text, "purchase_order"):
         return "purchase_order_summary"
 
-    if contains_any(text, ("invoice", "bill", "انوائس")):
+    if contains_phrase(text, "invoice"):
         return "invoice_summary"
 
-    if contains_any(text, ("sale", "sales", "farokht", "فروخت")):
+    if contains_any_phrase(text, ("sales",)):
         return "sales_summary"
 
     return "unknown"

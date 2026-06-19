@@ -104,6 +104,21 @@ def _handle_question(clean_question: str, normalized: str, settings) -> Assistan
     if not settings.live_data_enabled:
         return response("Live data assistant is disabled for this site.", status="Blocked", intent=intent)
 
+    dynamic_first_intents = {
+        "customer_summary",
+        "supplier_summary",
+        "item_lookup",
+        "quotation_summary",
+        "sales_order_summary",
+        "purchase_order_summary",
+        "unknown",
+    }
+
+    if intent in dynamic_first_intents and can_try_dynamic_query(clean_question):
+        dynamic_result = answer_dynamic_query(clean_question)
+        if dynamic_result:
+            return dynamic_result
+
     tool = get_tool(intent)
     if tool:
         tool_response = execute_tool(tool, clean_question)
