@@ -10,7 +10,7 @@ from frappe.utils import flt, getdate, nowdate
 def ask_ai(question: str | None = None) -> dict[str, Any]:
     """Return an MVP ERPNext answer using permission-aware Frappe APIs only."""
     try:
-        if not frappe.has_role("System Manager"):
+        if not _has_role("System Manager"):
             return _permission_denied_response()
 
         clean_question = (question or "").strip()
@@ -160,6 +160,10 @@ def _get_all_permission_aware(
 
 def _matches(text: str, words: tuple[str, ...]) -> bool:
     return all(word in text for word in words)
+
+
+def _has_role(role: str) -> bool:
+    return role in set(frappe.get_roles())
 
 
 def _extract_item_code(question: str) -> str | None:

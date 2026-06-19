@@ -12,6 +12,7 @@ PACKAGE = APP / "nexova_ai"
 PAGE = PACKAGE / "page" / "nexova_ai_assistant"
 WORKSPACE = PACKAGE / "workspace" / "nexova_ai" / "nexova_ai.json"
 HOOKS = APP / "hooks.py"
+PATCHES = APP / "patches.txt"
 
 
 def _load_hooks() -> dict[str, object]:
@@ -72,6 +73,20 @@ class AppStructureTest(unittest.TestCase):
         self.assertIn('frappe.pages["nexova-ai-assistant"]', script)
         self.assertNotIn('frappe.pages["nexova-ai"]', script)
         self.assertIn("frappe.ui.make_app_page", script)
+
+    def test_workspace_route_patch_is_registered(self) -> None:
+        patches = PATCHES.read_text().splitlines()
+
+        self.assertIn(
+            "nexova_ai.patches.v0_0.update_workspace_shortcut_route",
+            patches,
+        )
+
+    def test_api_uses_supported_role_check(self) -> None:
+        source = (APP / "api.py").read_text()
+
+        self.assertNotIn("frappe.has_role", source)
+        self.assertIn("frappe.get_roles()", source)
 
 
 if __name__ == "__main__":
