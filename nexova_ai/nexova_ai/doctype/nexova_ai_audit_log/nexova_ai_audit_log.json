@@ -9,7 +9,9 @@
     "user",
     "status",
     "intent",
+    "tool_name",
     "source",
+    "language",
     "latency_ms",
     "question_section",
     "question",
@@ -41,10 +43,23 @@
       "read_only": 1
     },
     {
+      "fieldname": "tool_name",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Tool Name",
+      "read_only": 1
+    },
+    {
       "default": "Desk Page",
       "fieldname": "source",
       "fieldtype": "Data",
       "label": "Source",
+      "read_only": 1
+    },
+    {
+      "fieldname": "language",
+      "fieldtype": "Data",
+      "label": "Language",
       "read_only": 1
     },
     {

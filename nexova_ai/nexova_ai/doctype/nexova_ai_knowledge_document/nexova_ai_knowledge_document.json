@@ -1,0 +1,97 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "autoname": "field:title",
+  "creation": "2026-06-20 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "title",
+    "knowledge_source",
+    "status",
+    "index_status",
+    "chunk_count",
+    "content_section",
+    "content",
+    "source_reference"
+  ],
+  "fields": [
+    {
+      "fieldname": "title",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Title",
+      "reqd": 1
+    },
+    {
+      "fieldname": "knowledge_source",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Knowledge Source",
+      "options": "Nexova AI Knowledge Source",
+      "reqd": 1
+    },
+    {
+      "default": "Draft",
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "Status",
+      "options": "Draft\nApproved\nDisabled"
+    },
+    {
+      "default": "Not Indexed",
+      "fieldname": "index_status",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "Index Status",
+      "options": "Not Indexed\nIndexed\nNo Content\nFailed",
+      "read_only": 1
+    },
+    {
+      "default": "0",
+      "fieldname": "chunk_count",
+      "fieldtype": "Int",
+      "label": "Chunk Count",
+      "read_only": 1
+    },
+    {
+      "fieldname": "content_section",
+      "fieldtype": "Section Break",
+      "label": "Content"
+    },
+    {
+      "fieldname": "content",
+      "fieldtype": "Long Text",
+      "label": "Content"
+    },
+    {
+      "fieldname": "source_reference",
+      "fieldtype": "Data",
+      "label": "Source Reference"
+    }
+  ],
+  "index_web_pages_for_search": 0,
+  "links": [],
+  "modified": "2026-06-20 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Nexova AI",
+  "name": "Nexova AI Knowledge Document",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "role": "System Manager",
+      "share": 1,
+      "write": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": []
+}

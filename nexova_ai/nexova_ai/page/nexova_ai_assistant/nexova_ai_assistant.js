@@ -16,6 +16,7 @@ frappe.pages["nexova-ai-assistant"].on_page_load = function (wrapper) {
     listening: false,
     recognition: null,
     ttsEnabled: true,
+    voiceEnabled: true,
   };
 
   const $root = $(`
@@ -51,6 +52,7 @@ frappe.pages["nexova-ai-assistant"].on_page_load = function (wrapper) {
   const $tts = $root.find(".nexova-ai-tts");
 
   addMessage("assistant", __("Hi. Ask me about today's sales, stock balance, or pending receivables."));
+  loadClientConfig();
   setupSpeechRecognition();
 
   $root.find(".nexova-ai-composer").on("submit", function (event) {
@@ -102,9 +104,13 @@ frappe.pages["nexova-ai-assistant"].on_page_load = function (wrapper) {
         const answer = response.message && response.message.message
           ? response.message.message
           : __("I could not find an answer.");
+        const data = response.message && response.message.data
+          ? response.message.data
+          : {};
 
         addMessage("assistant", answer);
         speak(answer);
+        handleAction(data);
       },
       error() {
         addMessage("assistant", __("Something went wrong while asking ERPNext."));
@@ -137,6 +143,11 @@ frappe.pages["nexova-ai-assistant"].on_page_load = function (wrapper) {
   }
 
   function setupSpeechRecognition() {
+    if (!state.voiceEnabled) {
+      $mic.prop("disabled", true).attr("title", __("Voice input is disabled for this site."));
+      return;
+    }
+
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
@@ -167,7 +178,7 @@ frappe.pages["nexova-ai-assistant"].on_page_load = function (wrapper) {
   }
 
   function speak(text) {
-    if (!state.ttsEnabled || !window.speechSynthesis) {
+    if (!state.voiceEnabled || !state.ttsEnabled || !window.speechSynthesis) {
       return;
     }
 
@@ -175,6 +186,33 @@ frappe.pages["nexova-ai-assistant"].on_page_load = function (wrapper) {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = frappe.boot.lang || navigator.language || "en-US";
     window.speechSynthesis.speak(utterance);
+  }
+
+  function handleAction(data) {
+    if (!data || data.action !== "navigate" || !Array.isArray(data.route)) {
+      return;
+    }
+
+    setTimeout(function () {
+      frappe.set_route.apply(frappe, data.route);
+    }, 400);
+  }
+
+  function loadClientConfig() {
+    frappe.call({
+      method: "nexova_ai.api.get_client_config",
+      callback(response) {
+        const config = response.message || {};
+        state.voiceEnabled = config.voice_enabled !== false;
+
+        if (!state.voiceEnabled) {
+          $mic.prop("disabled", true).attr("title", __("Voice input is disabled for this site."));
+          state.ttsEnabled = false;
+          $tts.attr("aria-pressed", "false");
+          $tts.text(__("Voice replies: Off"));
+        }
+      },
+    });
   }
 };
 

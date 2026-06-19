@@ -7,15 +7,29 @@
   "field_order": [
     "enabled",
     "required_role",
+    "feature_flags_section",
+    "navigation_enabled",
+    "live_data_enabled",
+    "voice_enabled",
+    "rag_enabled",
+    "subscription_enforcement_enabled",
+    "language_section",
+    "language_mode",
     "voice_section",
+    "voice_provider",
+    "stt_provider",
+    "tts_provider",
     "allow_voice_input",
     "allow_voice_replies",
+    "rate_limit_section",
+    "rate_limit_enabled",
+    "requests_per_minute",
+    "requests_per_day",
     "audit_section",
     "log_questions",
     "log_responses",
-    "future_section",
+    "provider_section",
     "llm_provider",
-    "rag_enabled",
     "subscription_status"
   ],
   "fields": [
@@ -34,9 +48,77 @@
       "reqd": 1
     },
     {
+      "fieldname": "feature_flags_section",
+      "fieldtype": "Section Break",
+      "label": "Feature Flags"
+    },
+    {
+      "default": "1",
+      "fieldname": "navigation_enabled",
+      "fieldtype": "Check",
+      "label": "Navigation Enabled"
+    },
+    {
+      "default": "1",
+      "fieldname": "live_data_enabled",
+      "fieldtype": "Check",
+      "label": "Live Data Enabled"
+    },
+    {
+      "default": "1",
+      "fieldname": "voice_enabled",
+      "fieldtype": "Check",
+      "label": "Voice Enabled"
+    },
+    {
+      "default": "0",
+      "fieldname": "rag_enabled",
+      "fieldtype": "Check",
+      "label": "RAG Enabled"
+    },
+    {
+      "default": "1",
+      "fieldname": "subscription_enforcement_enabled",
+      "fieldtype": "Check",
+      "label": "Subscription Enforcement Enabled"
+    },
+    {
+      "fieldname": "language_section",
+      "fieldtype": "Section Break",
+      "label": "Language"
+    },
+    {
+      "default": "English and Urdu",
+      "fieldname": "language_mode",
+      "fieldtype": "Select",
+      "label": "Language Mode",
+      "options": "English\nUrdu\nEnglish and Urdu"
+    },
+    {
       "fieldname": "voice_section",
       "fieldtype": "Section Break",
       "label": "Voice"
+    },
+    {
+      "default": "Browser",
+      "fieldname": "voice_provider",
+      "fieldtype": "Select",
+      "label": "Voice Provider",
+      "options": "Browser\nCloud\nLocal\nDisabled"
+    },
+    {
+      "default": "Browser",
+      "fieldname": "stt_provider",
+      "fieldtype": "Select",
+      "label": "Speech To Text Provider",
+      "options": "Browser\nCloud\nLocal\nDisabled"
+    },
+    {
+      "default": "Browser",
+      "fieldname": "tts_provider",
+      "fieldtype": "Select",
+      "label": "Text To Speech Provider",
+      "options": "Browser\nCloud\nLocal\nDisabled"
     },
     {
       "default": "1",
@@ -49,6 +131,29 @@
       "fieldname": "allow_voice_replies",
       "fieldtype": "Check",
       "label": "Allow Voice Replies"
+    },
+    {
+      "fieldname": "rate_limit_section",
+      "fieldtype": "Section Break",
+      "label": "Rate Limits"
+    },
+    {
+      "default": "1",
+      "fieldname": "rate_limit_enabled",
+      "fieldtype": "Check",
+      "label": "Rate Limit Enabled"
+    },
+    {
+      "default": "30",
+      "fieldname": "requests_per_minute",
+      "fieldtype": "Int",
+      "label": "Requests Per Minute"
+    },
+    {
+      "default": "500",
+      "fieldname": "requests_per_day",
+      "fieldtype": "Int",
+      "label": "Requests Per Day"
     },
     {
       "fieldname": "audit_section",
@@ -68,9 +173,9 @@
       "label": "Log Responses"
     },
     {
-      "fieldname": "future_section",
+      "fieldname": "provider_section",
       "fieldtype": "Section Break",
-      "label": "Future Controls"
+      "label": "Provider and Subscription"
     },
     {
       "default": "Deterministic",
@@ -80,17 +185,11 @@
       "options": "Deterministic\nMistral\nOpenAI Compatible\nDisabled"
     },
     {
-      "default": "0",
-      "fieldname": "rag_enabled",
-      "fieldtype": "Check",
-      "label": "RAG Enabled"
-    },
-    {
       "default": "Active",
       "fieldname": "subscription_status",
       "fieldtype": "Select",
       "label": "Subscription Status",
-      "options": "Active\nSuspended\nDisabled"
+      "options": "Active\nPast Due\nSuspended\nDisabled\nTerminated Pending Retention"
     }
   ],
   "index_web_pages_for_search": 0,
