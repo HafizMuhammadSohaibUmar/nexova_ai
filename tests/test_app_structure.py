@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 APP = ROOT / "nexova_ai"
 PACKAGE = APP / "nexova_ai"
 PAGE = PACKAGE / "page" / "nexova_ai_assistant"
+DOCTYPE = PACKAGE / "doctype"
 WORKSPACE = PACKAGE / "workspace" / "nexova_ai" / "nexova_ai.json"
 HOOKS = APP / "hooks.py"
 PATCHES = APP / "patches.txt"
@@ -51,11 +52,13 @@ class AppStructureTest(unittest.TestCase):
         workspace = json.loads(WORKSPACE.read_text())
         content = json.loads(workspace["content"])
 
-        shortcut = next(block for block in content if block["type"] == "shortcut")
+        shortcuts = {block["data"]["shortcut_name"]: block for block in content if block["type"] == "shortcut"}
         self.assertEqual(workspace["name"], "Nexova AI")
         self.assertEqual(workspace["module"], "Nexova AI")
-        self.assertEqual(shortcut["data"]["link_to"], "nexova-ai-assistant")
-        self.assertEqual(shortcut["data"]["route"], "/app/nexova-ai-assistant")
+        self.assertEqual(shortcuts["Open Nexova AI"]["data"]["link_to"], "nexova-ai-assistant")
+        self.assertEqual(shortcuts["Open Nexova AI"]["data"]["route"], "/app/nexova-ai-assistant")
+        self.assertEqual(shortcuts["Nexova AI Settings"]["data"]["link_to"], "Nexova AI Settings")
+        self.assertEqual(shortcuts["Nexova AI Audit Log"]["data"]["link_to"], "Nexova AI Audit Log")
         self.assertEqual(workspace["shortcuts"][0]["link_to"], "nexova-ai-assistant")
 
     def test_hooks_do_not_preload_page_controller(self) -> None:
@@ -95,6 +98,28 @@ class AppStructureTest(unittest.TestCase):
         self.assertIn('"recievables"', source)
         self.assertIn('"recievable"', source)
         self.assertIn('"unpaid"', source)
+
+    def test_production_foundation_doctypes_exist(self) -> None:
+        settings = DOCTYPE / "nexova_ai_settings" / "nexova_ai_settings.json"
+        audit_log = DOCTYPE / "nexova_ai_audit_log" / "nexova_ai_audit_log.json"
+
+        self.assertTrue(settings.exists())
+        self.assertTrue(audit_log.exists())
+
+        settings_doc = json.loads(settings.read_text())
+        audit_log_doc = json.loads(audit_log.read_text())
+
+        self.assertEqual(settings_doc["name"], "Nexova AI Settings")
+        self.assertEqual(settings_doc["issingle"], 1)
+        self.assertEqual(audit_log_doc["name"], "Nexova AI Audit Log")
+        self.assertIn("question", audit_log_doc["field_order"])
+
+    def test_api_uses_settings_and_audit_log(self) -> None:
+        source = (APP / "api.py").read_text()
+
+        self.assertIn('"Nexova AI Settings"', source)
+        self.assertIn('"Nexova AI Audit Log"', source)
+        self.assertIn("_safe_log_audit", source)
 
 
 if __name__ == "__main__":

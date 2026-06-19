@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from time import perf_counter
 from typing import Any
 
 import frappe
@@ -10,33 +11,63 @@ from frappe.utils import flt, getdate, nowdate
 @frappe.whitelist()
 def ask_ai(question: str | None = None) -> dict[str, Any]:
     """Return an MVP ERPNext answer using permission-aware Frappe APIs only."""
+    started_at = perf_counter()
+    clean_question = (question or "").strip()
+    normalized = _normalize_question(clean_question)
+    intent = "unknown"
+    status = "Success"
+    settings = _get_settings()
+
     try:
-        if not _has_role("System Manager"):
-            return _permission_denied_response()
+        if not settings["enabled"]:
+            status = "Blocked"
+            intent = "disabled"
+            response = _response("Nexova AI is currently disabled.")
+        elif settings["subscription_status"] != "Active":
+            status = "Blocked"
+            intent = "subscription"
+            response = _response("Nexova AI is currently not active for this site.")
+        elif not _has_role(settings["required_role"]):
+            status = "Blocked"
+            intent = "permission_denied"
+            response = _permission_denied_response()
+        elif not clean_question:
+            intent = "empty"
+            response = _response("Please ask about today's sales, stock balance, or pending receivables.")
+        else:
+            intent = _detect_intent(normalized)
 
-        clean_question = (question or "").strip()
-        normalized = _normalize_question(clean_question)
-
-        if not clean_question:
-            return _response("Please ask about today's sales, stock balance, or pending receivables.")
-
-        if _is_today_sales_intent(normalized):
-            return _today_sales()
-
-        if _is_stock_balance_intent(normalized):
-            return _stock_balance(clean_question)
-
-        if _is_pending_receivables_intent(normalized):
-            return _pending_receivables()
-
-        return _response(
-            "I can answer MVP questions about today's sales, stock balance, and pending receivables."
-        )
+            if intent == "today_sales":
+                response = _today_sales()
+            elif intent == "stock_balance":
+                response = _stock_balance(clean_question)
+            elif intent == "pending_receivables":
+                response = _pending_receivables()
+            else:
+                response = _response(
+                    "I can answer MVP questions about today's sales, stock balance, and pending receivables."
+                )
     except frappe.PermissionError:
-        return _permission_denied_response()
+        status = "Blocked"
+        intent = "permission_denied"
+        response = _permission_denied_response()
     except Exception:
+        status = "Error"
+        intent = "error"
         frappe.log_error(title="Nexova AI Error", message=frappe.get_traceback())
-        return _response("Something went wrong while asking ERPNext.")
+        response = _response("Something went wrong while asking ERPNext.")
+
+    _safe_log_audit(
+        settings=settings,
+        question=clean_question,
+        normalized_question=normalized,
+        intent=intent,
+        status=status,
+        response=response,
+        latency_ms=int((perf_counter() - started_at) * 1000),
+    )
+
+    return response
 
 
 def _today_sales() -> dict[str, Any]:
@@ -171,6 +202,19 @@ def _normalize_question(question: str) -> str:
     return re.sub(r"\s+", " ", re.sub(r"[^a-z0-9]+", " ", question.lower())).strip()
 
 
+def _detect_intent(text: str) -> str:
+    if _is_today_sales_intent(text):
+        return "today_sales"
+
+    if _is_stock_balance_intent(text):
+        return "stock_balance"
+
+    if _is_pending_receivables_intent(text):
+        return "pending_receivables"
+
+    return "unknown"
+
+
 def _is_today_sales_intent(text: str) -> bool:
     return _contains_any(text, ("sale", "sales", "invoice", "invoices")) and _contains_any(
         text,
@@ -203,6 +247,79 @@ def _is_pending_receivables_intent(text: str) -> bool:
 
 def _has_role(role: str) -> bool:
     return role in set(frappe.get_roles())
+
+
+def _get_settings() -> dict[str, Any]:
+    defaults: dict[str, Any] = {
+        "enabled": True,
+        "required_role": "System Manager",
+        "log_questions": True,
+        "log_responses": True,
+        "subscription_status": "Active",
+    }
+
+    try:
+        if not frappe.db.exists("DocType", "Nexova AI Settings"):
+            return defaults
+
+        settings = frappe.get_single("Nexova AI Settings")
+    except Exception:
+        return defaults
+
+    defaults.update(
+        {
+            "enabled": _enabled_by_default(settings.enabled),
+            "required_role": settings.required_role or "System Manager",
+            "log_questions": _enabled_by_default(settings.log_questions),
+            "log_responses": _enabled_by_default(settings.log_responses),
+            "subscription_status": settings.subscription_status or "Active",
+        }
+    )
+
+    return defaults
+
+
+def _enabled_by_default(value: Any) -> bool:
+    if value is None:
+        return True
+
+    return bool(value)
+
+
+def _safe_log_audit(
+    *,
+    settings: dict[str, Any],
+    question: str,
+    normalized_question: str,
+    intent: str,
+    status: str,
+    response: dict[str, Any],
+    latency_ms: int,
+) -> None:
+    if not settings["log_questions"] and not settings["log_responses"]:
+        return
+
+    try:
+        if not frappe.db.exists("DocType", "Nexova AI Audit Log"):
+            return
+
+        frappe.get_doc(
+            {
+                "doctype": "Nexova AI Audit Log",
+                "user": frappe.session.user,
+                "status": status,
+                "intent": intent,
+                "source": "Desk Page",
+                "latency_ms": latency_ms,
+                "question": question[:4000] if settings["log_questions"] else "",
+                "normalized_question": normalized_question[:140] if settings["log_questions"] else "",
+                "response_summary": response.get("message", "")[:4000]
+                if settings["log_responses"]
+                else "",
+            }
+        ).insert(ignore_permissions=True)
+    except Exception:
+        frappe.log_error(title="Nexova AI Audit Log Error", message=frappe.get_traceback())
 
 
 def _extract_item_code(question: str) -> str | None:

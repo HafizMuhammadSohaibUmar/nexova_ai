@@ -1,0 +1,120 @@
+{
+  "actions": [],
+  "allow_rename": 0,
+  "creation": "2026-06-20 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "enabled",
+    "required_role",
+    "voice_section",
+    "allow_voice_input",
+    "allow_voice_replies",
+    "audit_section",
+    "log_questions",
+    "log_responses",
+    "future_section",
+    "llm_provider",
+    "rag_enabled",
+    "subscription_status"
+  ],
+  "fields": [
+    {
+      "default": "1",
+      "fieldname": "enabled",
+      "fieldtype": "Check",
+      "label": "Enabled"
+    },
+    {
+      "default": "System Manager",
+      "fieldname": "required_role",
+      "fieldtype": "Link",
+      "label": "Required Role",
+      "options": "Role",
+      "reqd": 1
+    },
+    {
+      "fieldname": "voice_section",
+      "fieldtype": "Section Break",
+      "label": "Voice"
+    },
+    {
+      "default": "1",
+      "fieldname": "allow_voice_input",
+      "fieldtype": "Check",
+      "label": "Allow Voice Input"
+    },
+    {
+      "default": "1",
+      "fieldname": "allow_voice_replies",
+      "fieldtype": "Check",
+      "label": "Allow Voice Replies"
+    },
+    {
+      "fieldname": "audit_section",
+      "fieldtype": "Section Break",
+      "label": "Audit"
+    },
+    {
+      "default": "1",
+      "fieldname": "log_questions",
+      "fieldtype": "Check",
+      "label": "Log Questions"
+    },
+    {
+      "default": "1",
+      "fieldname": "log_responses",
+      "fieldtype": "Check",
+      "label": "Log Responses"
+    },
+    {
+      "fieldname": "future_section",
+      "fieldtype": "Section Break",
+      "label": "Future Controls"
+    },
+    {
+      "default": "Local MVP",
+      "fieldname": "llm_provider",
+      "fieldtype": "Select",
+      "label": "LLM Provider",
+      "options": "Local MVP\nMistral\nOpenAI Compatible\nDisabled"
+    },
+    {
+      "default": "0",
+      "fieldname": "rag_enabled",
+      "fieldtype": "Check",
+      "label": "RAG Enabled"
+    },
+    {
+      "default": "Active",
+      "fieldname": "subscription_status",
+      "fieldtype": "Select",
+      "label": "Subscription Status",
+      "options": "Active\nSuspended\nDisabled"
+    }
+  ],
+  "index_web_pages_for_search": 0,
+  "issingle": 1,
+  "links": [],
+  "modified": "2026-06-20 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Nexova AI",
+  "name": "Nexova AI Settings",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "role": "System Manager",
+      "share": 1,
+      "write": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": []
+}

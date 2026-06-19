@@ -16,6 +16,12 @@ This repository contains source files only. It does not modify ERPNext core, Doc
   - Today's submitted sales invoices
   - Stock balance from `Bin`
   - Pending receivables from submitted sales invoices
+- Production foundations:
+  - Single DocType: **Nexova AI Settings**
+  - Audit DocType: **Nexova AI Audit Log**
+  - Settings-based enable/disable, required role, subscription status, and audit toggles
+  - Non-blocking audit logging for assistant requests
+  - Workspace shortcuts for assistant, settings, and audit log
 
 ## Later Docker Installation Steps
 
@@ -48,7 +54,11 @@ Example questions:
 - `stock balance`
 - `stock balance for ITEM-001`
 - `pending receivables`
+- `unpaid invoices`
+- `outstanding receivables`
 
 ## Notes
 
 The MVP intentionally avoids raw SQL and uses only `frappe.get_list`, so normal Frappe permissions are respected.
+
+Voice recognition is provided by the user's browser through the Web Speech API. Nexova AI normalizes common speech-to-text variants before matching MVP intents, but the browser still controls the raw transcript quality.
