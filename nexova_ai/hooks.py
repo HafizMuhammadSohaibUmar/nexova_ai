@@ -7,3 +7,7 @@ app_license = "MIT"
 required_apps = ["erpnext"]
 
 app_include_css = "/assets/nexova_ai/css/nexova_ai.css"
+
+page_js = {
+    "nexova-ai": "public/js/nexova_ai.js",
+}
