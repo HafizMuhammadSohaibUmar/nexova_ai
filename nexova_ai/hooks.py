@@ -10,5 +10,5 @@ app_include_css = "/assets/nexova_ai/css/nexova_ai.css"
 app_include_js = "/assets/nexova_ai/js/nexova_ai.js"
 
 page_js = {
-    "nexova-ai": "public/js/nexova_ai.js",
+    "nexova-ai-assistant": "public/js/nexova_ai.js",
 }

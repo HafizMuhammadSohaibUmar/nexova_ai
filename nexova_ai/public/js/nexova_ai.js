@@ -1,7 +1,7 @@
 frappe.provide("frappe.pages");
-frappe.pages["nexova-ai"] = frappe.pages["nexova-ai"] || {};
+frappe.pages["nexova-ai-assistant"] = frappe.pages["nexova-ai-assistant"] || {};
 
-frappe.pages["nexova-ai"].on_page_load = function (wrapper) {
+frappe.pages["nexova-ai-assistant"].on_page_load = function (wrapper) {
   const page = frappe.ui.make_app_page({
     parent: wrapper,
     title: __("Nexova AI"),

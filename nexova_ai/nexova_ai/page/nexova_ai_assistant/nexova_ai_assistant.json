@@ -7,9 +7,9 @@
   "modified": "2026-06-16 00:00:00.000000",
   "modified_by": "Administrator",
   "module": "Nexova AI",
-  "name": "nexova-ai",
+  "name": "nexova-ai-assistant",
   "owner": "Administrator",
-  "page_name": "nexova-ai",
+  "page_name": "nexova-ai-assistant",
   "roles": [
     {
       "role": "System Manager"
@@ -19,5 +19,5 @@
   "standard": "Yes",
   "style": null,
   "system_page": 0,
-  "title": "Nexova AI"
+  "title": "Nexova AI Assistant"
 }
