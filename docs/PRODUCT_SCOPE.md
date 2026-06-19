@@ -25,11 +25,11 @@ ERPNext data is fetched only by explicit Python tools that enforce Frappe permis
 - Multi-tenant SaaS support is planned from the start.
 - RAG and voice share the same secure backend orchestration model.
 
-## MVP Scope
+## Production V1 Foundation Scope
 
-The MVP validates the assistant inside ERPNext Desk with a small, safe set of read-only capabilities.
+The production v1 foundation establishes the assistant inside ERPNext Desk with a safe set of read-only capabilities.
 
-### MVP Goals
+### Foundation Goals
 
 - Provide a Nexova AI Desk page.
 - Accept typed user questions.
@@ -41,7 +41,7 @@ The MVP validates the assistant inside ERPNext Desk with a small, safe set of re
 - Respect Frappe permissions.
 - Avoid raw SQL and ERPNext core changes.
 
-### MVP Capabilities
+### Foundation Capabilities
 
 - Today's submitted sales summary
 - Stock balance summary
@@ -50,7 +50,7 @@ The MVP validates the assistant inside ERPNext Desk with a small, safe set of re
 - Supported-capabilities fallback
 - Basic permission denied response
 
-### MVP Non-Goals
+### Foundation Non-Goals
 
 - No write actions
 - No document creation
@@ -63,7 +63,7 @@ The MVP validates the assistant inside ERPNext Desk with a small, safe set of re
 
 ## v1 Scope
 
-v1 turns the MVP into a structured assistant platform with a formal tool registry and Mistral integration.
+v1 turns the foundation into a structured assistant platform with a formal tool registry and Mistral integration.
 
 ### v1 Goals
 

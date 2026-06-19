@@ -659,7 +659,7 @@ Safety notes:
 
 ## Future Action Tools
 
-Write-capable tools are out of scope for MVP and v1. Future action tools should be separate from read tools and require explicit confirmation.
+Write-capable tools are out of scope for production v1. Future action tools should be separate from read tools and require explicit confirmation.
 
 Potential future actions:
 

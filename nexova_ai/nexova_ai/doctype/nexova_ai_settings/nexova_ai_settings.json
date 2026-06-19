@@ -73,11 +73,11 @@
       "label": "Future Controls"
     },
     {
-      "default": "Local MVP",
+      "default": "Deterministic",
       "fieldname": "llm_provider",
       "fieldtype": "Select",
       "label": "LLM Provider",
-      "options": "Local MVP\nMistral\nOpenAI Compatible\nDisabled"
+      "options": "Deterministic\nMistral\nOpenAI Compatible\nDisabled"
     },
     {
       "default": "0",

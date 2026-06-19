@@ -33,7 +33,7 @@ The assistant should be split into five layers:
 
 The client interface is the Frappe Desk page for Nexova AI. It sends the user's message to the backend and displays the response.
 
-Current browser voice input and text-to-speech can remain client-side for the MVP. Future voice features should still route transcribed user intent through the same backend assistant API.
+Current browser voice input and text-to-speech can remain client-side for production v1 foundation. Future voice features should still route transcribed user intent through the same backend assistant API.
 
 Responsibilities:
 
@@ -447,4 +447,4 @@ These boundaries are architectural only. No code should be added until the desig
 
 The recommended design keeps Mistral behind a narrow AI Provider Layer and uses it only for intent detection and response wording. ERPNext data stays protected behind explicit Python tools that enforce permissions, tenant boundaries, field selection, row limits, and audit logging.
 
-This gives Nexova AI a safe MVP path while leaving clear extension points for RAG, voice, and multi-tenant SaaS growth.
+This gives Nexova AI a safe production foundation while leaving clear extension points for RAG, voice, and multi-tenant SaaS growth.

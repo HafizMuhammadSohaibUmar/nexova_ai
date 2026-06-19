@@ -10,7 +10,7 @@ from frappe.utils import flt, getdate, nowdate
 
 @frappe.whitelist()
 def ask_ai(question: str | None = None) -> dict[str, Any]:
-    """Return an MVP ERPNext answer using permission-aware Frappe APIs only."""
+    """Return a supported ERPNext answer using permission-aware Frappe APIs only."""
     started_at = perf_counter()
     clean_question = (question or "").strip()
     normalized = _normalize_question(clean_question)
@@ -45,7 +45,7 @@ def ask_ai(question: str | None = None) -> dict[str, Any]:
                 response = _pending_receivables()
             else:
                 response = _response(
-                    "I can answer MVP questions about today's sales, stock balance, and pending receivables."
+                    "I can answer supported questions about today's sales, stock balance, and pending receivables."
                 )
     except frappe.PermissionError:
         status = "Blocked"

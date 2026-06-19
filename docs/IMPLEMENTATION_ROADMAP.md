@@ -439,7 +439,7 @@ High.
 
 ## Recommended Release Milestones
 
-### Milestone A: Safe MVP
+### Milestone A: Production Foundation
 
 Includes Phase 1 and the first part of Phase 2.
 

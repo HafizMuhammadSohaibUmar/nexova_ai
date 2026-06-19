@@ -4,7 +4,7 @@ Custom Frappe app for ERPNext. The current VM deployment is pinned to ERPNext/Fr
 
 This repository contains source files only. It does not modify ERPNext core, Docker files, or any existing ERPNext setup.
 
-## MVP Features
+## Production V1 Foundation
 
 - Workspace: **Nexova AI**
 - Desk page: **Nexova AI Assistant**
@@ -12,7 +12,7 @@ This repository contains source files only. It does not modify ERPNext core, Doc
 - Browser voice input using the Web Speech API when supported
 - Text-to-speech replies using the browser Speech Synthesis API
 - Whitelisted backend method: `nexova_ai.api.ask_ai(question)`
-- Secure MVP ERPNext queries using `frappe.get_list` only:
+- Secure ERPNext queries using `frappe.get_list` only:
   - Today's submitted sales invoices
   - Stock balance from `Bin`
   - Pending receivables from submitted sales invoices
@@ -59,6 +59,6 @@ Example questions:
 
 ## Notes
 
-The MVP intentionally avoids raw SQL and uses only `frappe.get_list`, so normal Frappe permissions are respected.
+The assistant intentionally avoids raw SQL and uses only `frappe.get_list`, so normal Frappe permissions are respected.
 
-Voice recognition is provided by the user's browser through the Web Speech API. Nexova AI normalizes common speech-to-text variants before matching MVP intents, but the browser still controls the raw transcript quality.
+Voice recognition is provided by the user's browser through the Web Speech API. Nexova AI normalizes common speech-to-text variants before matching supported intents, but the browser still controls the raw transcript quality.
