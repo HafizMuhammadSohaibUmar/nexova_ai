@@ -6,16 +6,31 @@ Use this checklist before rebuilding and deploying a production image.
 
 - Confirm the release commit is pushed to GitHub.
 - Confirm `git status` is clean locally.
-- Tag the release before deployment.
+- Create and push a release tag before deployment.
+- Record the release tag, Git commit, image tag, site name, and deployment time.
 - Confirm no ERPNext or Frappe core files are modified.
 - Confirm no secrets are committed.
+- Confirm no manual container hotfix exists without a matching Git commit.
 
 ## Build
 
 - Build the custom image from `apps.json`.
 - Use explicit Frappe and ERPNext branches.
 - Use a versioned custom image tag.
+- Build from GitHub source, not from edited files inside a running container.
 - Do not hotfix app files inside running containers.
+
+## Staging Gate
+
+- Deploy the release image to staging before production.
+- Run `bench --site <staging-site> migrate`.
+- Run `bench --site <staging-site> clear-cache`.
+- Run the full smoke test list on staging.
+- Confirm rate limit behavior on staging.
+- Confirm subscription suspended/disabled behavior on staging.
+- Confirm audit retention cleanup behavior on staging or a disposable test site.
+- Confirm backup and restore verification before production deployment.
+- Do not deploy to production/client demo until staging passes.
 
 ## Migration
 
@@ -69,6 +84,8 @@ Use this checklist before rebuilding and deploying a production image.
 - Confirm private files backup succeeds.
 - Confirm backup storage is off-server or externally replicated.
 - Test restore on staging before relying on production backups.
+- Record the latest verified backup timestamp before production deployment.
+- Confirm rollback will use the pre-release backup if schema/data migration rollback is required.
 
 ## Monitoring
 

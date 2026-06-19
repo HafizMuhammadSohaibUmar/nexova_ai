@@ -16,6 +16,7 @@ from nexova_ai.assistant.rate_limit import check_rate_limit
 from nexova_ai.assistant.registry import get_tool
 from nexova_ai.assistant.safety import broad_request_message, is_broad_or_sensitive_request
 from nexova_ai.assistant.settings import get_settings
+from nexova_ai.assistant.subscription import evaluate_subscription
 from nexova_ai.assistant.tools import execute_tool
 
 
@@ -59,9 +60,13 @@ def _handle_question(clean_question: str, normalized: str, settings) -> Assistan
     if not settings.enabled:
         return response("Nexova AI is currently disabled.", status="Blocked", intent="disabled")
 
-    if settings.subscription_enforcement_enabled and settings.subscription_status != "Active":
+    subscription = evaluate_subscription(
+        settings.subscription_status,
+        settings.subscription_enforcement_enabled,
+    )
+    if not subscription.allowed:
         return response(
-            "Nexova AI is currently not active for this site.",
+            subscription.message,
             status="Blocked",
             intent="subscription",
         )

@@ -22,7 +22,7 @@ def detect_language(text: str) -> str:
     if re.search(r"[\u0600-\u06ff]", text):
         return "ur"
 
-    roman_urdu_terms = ("mera", "meri", "kitna", "kitni", "kholo", "dikhao", "hisab", "wasooli")
+    roman_urdu_terms = ("mera", "meri", "kitna", "kitni", "kitne", "kholo", "dikhao", "hisab", "wasooli")
     if contains_any(normalize_text(text), roman_urdu_terms):
         return "ur-roman"
 

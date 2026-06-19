@@ -26,6 +26,11 @@ class AssistantSettings:
     rate_limit_enabled: bool = True
     requests_per_minute: int = 30
     requests_per_day: int = 500
+    audit_log_retention_days: int = 90
+    tool_log_retention_days: int = 90
+    max_tool_rows: int = 500
+    max_dynamic_rows: int = 20
+    max_response_characters: int = 4000
 
 
 def get_settings() -> AssistantSettings:
@@ -58,6 +63,20 @@ def get_settings() -> AssistantSettings:
         rate_limit_enabled=_enabled(getattr(doc, "rate_limit_enabled", 1)),
         requests_per_minute=_positive_int(getattr(doc, "requests_per_minute", 30), 30),
         requests_per_day=_positive_int(getattr(doc, "requests_per_day", 500), 500),
+        audit_log_retention_days=_non_negative_int(
+            getattr(doc, "audit_log_retention_days", 90),
+            90,
+        ),
+        tool_log_retention_days=_non_negative_int(
+            getattr(doc, "tool_log_retention_days", 90),
+            90,
+        ),
+        max_tool_rows=_positive_int(getattr(doc, "max_tool_rows", 500), 500),
+        max_dynamic_rows=_positive_int(getattr(doc, "max_dynamic_rows", 20), 20),
+        max_response_characters=_positive_int(
+            getattr(doc, "max_response_characters", 4000),
+            4000,
+        ),
     )
 
 
@@ -75,3 +94,12 @@ def _positive_int(value: Any, fallback: int) -> int:
         return fallback
 
     return parsed if parsed > 0 else fallback
+
+
+def _non_negative_int(value: Any, fallback: int) -> int:
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return fallback
+
+    return parsed if parsed >= 0 else fallback

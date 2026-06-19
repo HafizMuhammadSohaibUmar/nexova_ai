@@ -12,9 +12,10 @@ from frappe.utils import flt, getdate, nowdate
 from nexova_ai.assistant.audit import log_tool_execution
 from nexova_ai.assistant.contracts import ToolSpec, response
 from nexova_ai.assistant.permissions import can_read_doctype
+from nexova_ai.assistant.settings import get_settings
 from nexova_ai.assistant.vocabulary import canonical_text, contains_phrase
 
-MAX_ROWS = 500
+MAX_ROWS_CAP = 500
 
 
 @dataclass(frozen=True)
@@ -316,7 +317,7 @@ def _document_count_summary(question: str, doctype: str, intent: str, label: str
         filters=context.filters,
         fields=["name", "status"],
         order_by="modified desc",
-        page_length=MAX_ROWS,
+        page_length=_configured_max_rows(),
     )
     return response(
         f"There are {len(rows)} readable {label.lower()} record(s) in the current bounded result.",
@@ -343,7 +344,7 @@ def _get_rows(
     filters: dict[str, Any],
     fields: list[str],
     order_by: str | None = None,
-    page_length: int = MAX_ROWS,
+    page_length: int = MAX_ROWS_CAP,
 ) -> list[dict[str, Any]]:
     if not can_read_doctype(doctype):
         raise frappe.PermissionError
@@ -354,7 +355,7 @@ def _get_rows(
         fields=fields,
         order_by=order_by,
         limit_start=0,
-        limit_page_length=min(page_length, MAX_ROWS),
+        limit_page_length=min(page_length, _configured_max_rows()),
     )
 
 
@@ -367,7 +368,7 @@ def _count_readable(doctype: str) -> int:
             doctype,
             fields=["name"],
             limit_start=0,
-            limit_page_length=MAX_ROWS,
+            limit_page_length=_configured_max_rows(),
         )
     )
 
@@ -608,3 +609,12 @@ def _trim_extracted_value(value: str) -> str:
             cut_at = min(cut_at, index)
 
     return value[:cut_at].strip(" .,;:")
+
+
+def _configured_max_rows() -> int:
+    try:
+        configured = get_settings().max_tool_rows
+    except Exception:
+        configured = MAX_ROWS_CAP
+
+    return max(1, min(configured, MAX_ROWS_CAP))

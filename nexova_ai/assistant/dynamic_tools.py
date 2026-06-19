@@ -7,9 +7,9 @@ import frappe
 from nexova_ai.assistant.contracts import response
 from nexova_ai.assistant.discovery import find_readable_doctype, safe_list_fields
 from nexova_ai.assistant.intent import normalize_text
+from nexova_ai.assistant.settings import get_settings
 from nexova_ai.assistant.vocabulary import contains_any_phrase
 
-MAX_DYNAMIC_ROWS = 20
 MAX_COUNT_SCAN = 500
 
 
@@ -24,6 +24,8 @@ def answer_dynamic_query(question: str):
 
     text = normalize_text(question)
     fields = safe_list_fields(doctype["name"])
+    settings = get_settings()
+    max_dynamic_rows = max(1, min(settings.max_dynamic_rows, 100))
 
     if contains_any_phrase(text, ("count",)):
         count = _count_readable(doctype["name"])
@@ -43,7 +45,7 @@ def answer_dynamic_query(question: str):
         doctype["name"],
         fields=fields,
         order_by="modified desc",
-        limit_page_length=MAX_DYNAMIC_ROWS,
+        limit_page_length=max_dynamic_rows,
     )
 
     return response(
@@ -69,11 +71,12 @@ def _rows_table(label: str, fields: list[str], rows: list[dict[str, Any]]) -> di
 
 
 def _count_readable(doctype: str) -> int:
+    settings = get_settings()
     return len(
         frappe.get_list(
             doctype,
             fields=["name"],
             limit_start=0,
-            limit_page_length=MAX_COUNT_SCAN,
+            limit_page_length=max(1, min(settings.max_tool_rows, MAX_COUNT_SCAN)),
         )
     )

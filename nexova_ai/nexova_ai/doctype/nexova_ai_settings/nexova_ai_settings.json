@@ -25,9 +25,16 @@
     "rate_limit_enabled",
     "requests_per_minute",
     "requests_per_day",
+    "limits_section",
+    "max_tool_rows",
+    "max_dynamic_rows",
+    "max_response_characters",
     "audit_section",
     "log_questions",
     "log_responses",
+    "audit_retention_section",
+    "audit_log_retention_days",
+    "tool_log_retention_days",
     "provider_section",
     "llm_provider",
     "subscription_status"
@@ -156,6 +163,32 @@
       "label": "Requests Per Day"
     },
     {
+      "fieldname": "limits_section",
+      "fieldtype": "Section Break",
+      "label": "Output Limits"
+    },
+    {
+      "default": "500",
+      "description": "Maximum bounded records scanned by explicit live-data tools.",
+      "fieldname": "max_tool_rows",
+      "fieldtype": "Int",
+      "label": "Max Tool Rows"
+    },
+    {
+      "default": "20",
+      "description": "Maximum records returned by dynamic readable DocType list queries.",
+      "fieldname": "max_dynamic_rows",
+      "fieldtype": "Int",
+      "label": "Max Dynamic Rows"
+    },
+    {
+      "default": "4000",
+      "description": "Maximum assistant response characters before future truncation controls are applied.",
+      "fieldname": "max_response_characters",
+      "fieldtype": "Int",
+      "label": "Max Response Characters"
+    },
+    {
       "fieldname": "audit_section",
       "fieldtype": "Section Break",
       "label": "Audit"
@@ -171,6 +204,25 @@
       "fieldname": "log_responses",
       "fieldtype": "Check",
       "label": "Log Responses"
+    },
+    {
+      "fieldname": "audit_retention_section",
+      "fieldtype": "Section Break",
+      "label": "Audit Retention"
+    },
+    {
+      "default": "90",
+      "description": "Delete assistant audit logs older than this many days. Use 0 to disable cleanup.",
+      "fieldname": "audit_log_retention_days",
+      "fieldtype": "Int",
+      "label": "Audit Log Retention Days"
+    },
+    {
+      "default": "90",
+      "description": "Delete assistant tool execution logs older than this many days. Use 0 to disable cleanup.",
+      "fieldname": "tool_log_retention_days",
+      "fieldtype": "Int",
+      "label": "Tool Log Retention Days"
     },
     {
       "fieldname": "provider_section",

@@ -70,6 +70,10 @@ class AppStructureTest(unittest.TestCase):
         self.assertEqual(hooks["app_include_css"], "/assets/nexova_ai/css/nexova_ai.css")
         self.assertNotIn("app_include_js", hooks)
         self.assertNotIn("page_js", hooks)
+        self.assertIn(
+            "nexova_ai.assistant.retention.cleanup_audit_logs",
+            hooks["scheduler_events"]["daily"],
+        )
 
     def test_page_controller_registers_only_assistant_route(self) -> None:
         script = (PAGE / "nexova_ai_assistant.js").read_text(encoding="utf-8")
@@ -119,6 +123,20 @@ class AppStructureTest(unittest.TestCase):
         self.assertIn("question", audit_log_doc["field_order"])
         self.assertEqual(tool_log_doc["name"], "Nexova AI Tool Execution Log")
 
+    def test_settings_contains_production_control_fields(self) -> None:
+        settings = DOCTYPE / "nexova_ai_settings" / "nexova_ai_settings.json"
+        settings_doc = json.loads(settings.read_text(encoding="utf-8"))
+        fieldnames = {field["fieldname"] for field in settings_doc["fields"]}
+
+        for fieldname in (
+            "audit_log_retention_days",
+            "tool_log_retention_days",
+            "max_tool_rows",
+            "max_dynamic_rows",
+            "max_response_characters",
+        ):
+            self.assertIn(fieldname, fieldnames)
+
     def test_api_uses_settings_and_audit_log(self) -> None:
         settings_source = (ASSISTANT / "settings.py").read_text(encoding="utf-8")
         audit_source = (ASSISTANT / "audit.py").read_text(encoding="utf-8")
@@ -135,6 +153,7 @@ class AppStructureTest(unittest.TestCase):
             "permissions.py",
             "safety.py",
             "rate_limit.py",
+            "subscription.py",
             "intent.py",
             "vocabulary.py",
             "registry.py",
@@ -145,6 +164,7 @@ class AppStructureTest(unittest.TestCase):
             "rag.py",
             "knowledge.py",
             "voice.py",
+            "retention.py",
             "orchestrator.py",
         ):
             self.assertTrue((ASSISTANT / module).exists(), module)
