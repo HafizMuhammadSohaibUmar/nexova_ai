@@ -108,7 +108,8 @@ frappe.pages["nexova-ai-assistant"].on_page_load = function (wrapper) {
           ? response.message.data
           : {};
 
-        addMessage("assistant", answer);
+        const $assistantMessage = addMessage("assistant", answer);
+        renderStructuredData(data, $assistantMessage);
         speak(answer);
         handleAction(data);
       },
@@ -133,6 +134,62 @@ frappe.pages["nexova-ai-assistant"].on_page_load = function (wrapper) {
     $message.find(".nexova-ai-message-label").text(label);
     $message.find(".nexova-ai-message-text").text(text);
     $messages.append($message);
+    $messages.scrollTop($messages.prop("scrollHeight"));
+    return $message;
+  }
+
+  function renderStructuredData(data, $message) {
+    if (!data || !$message) {
+      return;
+    }
+
+    if (Array.isArray(data.summary_cards) && data.summary_cards.length) {
+      const $cards = $('<div class="nexova-ai-result-cards"></div>');
+
+      data.summary_cards.forEach(function (card) {
+        const $card = $('<div class="nexova-ai-result-card"></div>');
+        $('<div class="nexova-ai-result-card-label"></div>').text(card.label || "").appendTo($card);
+        $('<div class="nexova-ai-result-card-value"></div>').text(String(card.value ?? "")).appendTo($card);
+        $cards.append($card);
+      });
+
+      $message.append($cards);
+    }
+
+    if (data.table && Array.isArray(data.table.columns) && Array.isArray(data.table.rows) && data.table.rows.length) {
+      const $tableWrap = $('<div class="nexova-ai-result-table-wrap"></div>');
+
+      if (data.table.title) {
+        $('<div class="nexova-ai-result-table-title"></div>').text(data.table.title).appendTo($tableWrap);
+      }
+
+      const $table = $('<table class="nexova-ai-result-table"></table>');
+      const $thead = $('<thead></thead>');
+      const $headRow = $('<tr></tr>');
+
+      data.table.columns.forEach(function (column) {
+        $('<th></th>').text(column || "").appendTo($headRow);
+      });
+
+      $thead.append($headRow);
+      $table.append($thead);
+
+      const $tbody = $('<tbody></tbody>');
+      data.table.rows.slice(0, 10).forEach(function (row) {
+        const $row = $('<tr></tr>');
+
+        row.forEach(function (cell) {
+          $('<td></td>').text(String(cell ?? "")).appendTo($row);
+        });
+
+        $tbody.append($row);
+      });
+
+      $table.append($tbody);
+      $tableWrap.append($table);
+      $message.append($tableWrap);
+    }
+
     $messages.scrollTop($messages.prop("scrollHeight"));
   }
 

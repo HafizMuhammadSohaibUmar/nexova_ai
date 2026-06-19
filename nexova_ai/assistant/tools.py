@@ -54,6 +54,7 @@ def sales_summary(question: str) -> dict[str, Any]:
     totals = _sum_by_currency(rows, "grand_total")
     message = _summary_message(f"{context.label} submitted sales", totals, len(rows), "invoice")
 
+    top_customers = []
     if _is_top_request(question, ("customer", "customers", "client", "clients")):
         top_customers = _top_party_totals(rows, "customer", "grand_total")
         if top_customers:
@@ -68,6 +69,8 @@ def sales_summary(question: str) -> dict[str, Any]:
             "count": len(rows),
             "totals_by_currency": totals,
             "filters_applied": context.filters_applied,
+            "summary_cards": _summary_cards(len(rows), totals, "Invoices"),
+            "table": _party_table("Top Customers", "Customer", top_customers),
         },
     ).as_dict()
 
@@ -81,13 +84,17 @@ def purchase_summary(question: str) -> dict[str, Any]:
     rows = _get_rows(
         "Purchase Invoice",
         filters=context.filters,
-        fields=["grand_total", "currency"],
+        fields=["grand_total", "currency", "supplier"],
         order_by="posting_date desc, creation desc",
     )
     totals = _sum_by_currency(rows, "grand_total")
+    top_suppliers = []
+    if _is_top_request(question, ("supplier", "suppliers", "vendor", "vendors")):
+        top_suppliers = _top_party_totals(rows, "supplier", "grand_total")
 
     return response(
-        _summary_message(f"{context.label} submitted purchases", totals, len(rows), "invoice"),
+        _summary_message(f"{context.label} submitted purchases", totals, len(rows), "invoice")
+        + ((" Top suppliers: " + _format_top_totals(top_suppliers)) if top_suppliers else ""),
         intent="purchase_summary",
         tool_name="purchase_summary",
         data={
@@ -95,6 +102,8 @@ def purchase_summary(question: str) -> dict[str, Any]:
             "count": len(rows),
             "totals_by_currency": totals,
             "filters_applied": context.filters_applied,
+            "summary_cards": _summary_cards(len(rows), totals, "Invoices"),
+            "table": _party_table("Top Suppliers", "Supplier", top_suppliers),
         },
     ).as_dict()
 
@@ -133,6 +142,22 @@ def stock_balance(question: str) -> dict[str, Any]:
             "total_actual_qty": total_actual,
             "count": len(rows),
             "filters_applied": _compact_filters(filters),
+            "summary_cards": [
+                {"label": "Warehouse Bins", "value": len(rows)},
+                {"label": "Actual Qty", "value": _format_float(total_actual)},
+            ],
+            "table": {
+                "title": "Top Stock Bins",
+                "columns": ["Item", "Warehouse", "Actual Qty"],
+                "rows": [
+                    [
+                        row.get("item_code") or "",
+                        row.get("warehouse") or "",
+                        _format_float(flt(row.get("actual_qty"))),
+                    ]
+                    for row in rows[:10]
+                ],
+            },
         },
     ).as_dict()
 
@@ -147,10 +172,11 @@ def receivables_summary(question: str) -> dict[str, Any]:
     rows = _get_rows(
         "Sales Invoice",
         filters=context.filters,
-        fields=["outstanding_amount", "currency"],
+        fields=["outstanding_amount", "currency", "customer"],
         order_by="due_date asc, posting_date asc",
     )
     totals = _sum_by_currency(rows, "outstanding_amount")
+    top_customers = _top_party_totals(rows, "customer", "outstanding_amount")
 
     return response(
         _summary_message("Pending receivables", totals, len(rows), "invoice"),
@@ -161,6 +187,8 @@ def receivables_summary(question: str) -> dict[str, Any]:
             "count": len(rows),
             "totals_by_currency": totals,
             "filters_applied": context.filters_applied,
+            "summary_cards": _summary_cards(len(rows), totals, "Invoices"),
+            "table": _party_table("Top Outstanding Customers", "Customer", top_customers),
         },
     ).as_dict()
 
@@ -175,10 +203,11 @@ def payables_summary(question: str) -> dict[str, Any]:
     rows = _get_rows(
         "Purchase Invoice",
         filters=context.filters,
-        fields=["outstanding_amount", "currency"],
+        fields=["outstanding_amount", "currency", "supplier"],
         order_by="due_date asc, posting_date asc",
     )
     totals = _sum_by_currency(rows, "outstanding_amount")
+    top_suppliers = _top_party_totals(rows, "supplier", "outstanding_amount")
 
     return response(
         _summary_message("Pending payables", totals, len(rows), "invoice"),
@@ -189,6 +218,8 @@ def payables_summary(question: str) -> dict[str, Any]:
             "count": len(rows),
             "totals_by_currency": totals,
             "filters_applied": context.filters_applied,
+            "summary_cards": _summary_cards(len(rows), totals, "Invoices"),
+            "table": _party_table("Top Outstanding Suppliers", "Supplier", top_suppliers),
         },
     ).as_dict()
 
@@ -238,7 +269,24 @@ def item_lookup(question: str) -> dict[str, Any]:
         message,
         intent="item_lookup",
         tool_name="item_lookup",
-        data={"type": "item_lookup", "count": len(rows), "items": rows[:5]},
+        data={
+            "type": "item_lookup",
+            "count": len(rows),
+            "items": rows[:5],
+            "summary_cards": [{"label": "Matches", "value": len(rows)}],
+            "table": {
+                "title": "Matching Items",
+                "columns": ["Item", "Item Name", "Disabled"],
+                "rows": [
+                    [
+                        row.get("name") or "",
+                        row.get("item_name") or "",
+                        "Yes" if row.get("disabled") else "No",
+                    ]
+                    for row in rows[:10]
+                ],
+            },
+        },
     ).as_dict()
 
 
@@ -278,6 +326,12 @@ def _document_count_summary(question: str, doctype: str, intent: str, label: str
             "count": len(rows),
             "row_count": len(rows),
             "filters_applied": context.filters_applied,
+            "summary_cards": [{"label": "Records", "value": len(rows)}],
+            "table": {
+                "title": f"Recent {label} Records",
+                "columns": ["Name", "Status"],
+                "rows": [[row.get("name") or "", row.get("status") or ""] for row in rows[:10]],
+            },
         },
     ).as_dict()
 
@@ -483,6 +537,48 @@ def _format_top_totals(rows: list[dict[str, Any]]) -> str:
         parts.append(f"{row['name']} ({total})")
 
     return ", ".join(parts)
+
+
+def _summary_cards(count: int, totals_by_currency: dict[str, float], count_label: str) -> list[dict[str, Any]]:
+    cards: list[dict[str, Any]] = [{"label": count_label, "value": count}]
+
+    for currency, total in sorted(totals_by_currency.items()):
+        cards.append(
+            {
+                "label": currency,
+                "value": frappe.format_value(
+                    total,
+                    {"fieldtype": "Currency", "options": currency},
+                ),
+            }
+        )
+
+    return cards
+
+
+def _party_table(
+    title: str,
+    party_label: str,
+    rows: list[dict[str, Any]],
+) -> dict[str, Any] | None:
+    if not rows:
+        return None
+
+    return {
+        "title": title,
+        "columns": [party_label, "Currency", "Total"],
+        "rows": [
+            [
+                row.get("name") or "",
+                row.get("currency") or "",
+                frappe.format_value(
+                    row.get("total") or 0,
+                    {"fieldtype": "Currency", "options": row.get("currency")},
+                ),
+            ]
+            for row in rows
+        ],
+    }
 
 
 def _compact_filters(filters: dict[str, Any]) -> dict[str, Any]:

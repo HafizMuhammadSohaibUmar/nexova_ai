@@ -178,6 +178,7 @@ class AppStructureTest(unittest.TestCase):
 
         self.assertIn("handleAction(data)", script)
         self.assertIn("frappe.set_route.apply", script)
+        self.assertIn("renderStructuredData(data", script)
 
     def test_frontend_requires_voice_transcript_confirmation(self) -> None:
         script = (PAGE / "nexova_ai_assistant.js").read_text(encoding="utf-8")
@@ -194,6 +195,18 @@ class AppStructureTest(unittest.TestCase):
         self.assertIn('"customer"', source)
         self.assertIn('"supplier"', source)
         self.assertIn('"warehouse"', source)
+
+    def test_live_tools_return_structured_cards_and_tables(self) -> None:
+        source = (ASSISTANT / "tools.py").read_text(encoding="utf-8")
+        css = (APP / "public" / "css" / "nexova_ai.css").read_text(encoding="utf-8")
+        script = (PAGE / "nexova_ai_assistant.js").read_text(encoding="utf-8")
+
+        self.assertIn('"summary_cards"', source)
+        self.assertIn('"table"', source)
+        self.assertIn("_party_table", source)
+        self.assertIn("nexova-ai-result-card", css)
+        self.assertIn("nexova-ai-result-table", css)
+        self.assertIn("data.table.rows.slice(0, 10)", script)
 
 
 if __name__ == "__main__":
