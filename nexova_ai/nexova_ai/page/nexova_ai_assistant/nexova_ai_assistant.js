@@ -51,7 +51,7 @@ frappe.pages["nexova-ai-assistant"].on_page_load = function (wrapper) {
   const $send = $root.find(".nexova-ai-send");
   const $tts = $root.find(".nexova-ai-tts");
 
-  addMessage("assistant", __("Hi. Ask me about today's sales, stock balance, or pending receivables."));
+  addMessage("assistant", __("Hi. Ask me about sales, purchases, stock, receivables, payables, customers, suppliers, items, orders, invoices, or ERPNext navigation."));
   loadClientConfig();
   setupSpeechRecognition();
 
@@ -173,7 +173,10 @@ frappe.pages["nexova-ai-assistant"].on_page_load = function (wrapper) {
     state.recognition.onresult = function (event) {
       const transcript = event.results[0][0].transcript;
       $input.val(transcript).focus();
-      askQuestion(transcript);
+      frappe.show_alert({
+        message: __("Transcript ready. Review it, then tap Ask."),
+        indicator: "blue",
+      });
     };
   }
 

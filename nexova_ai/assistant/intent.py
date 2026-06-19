@@ -44,6 +44,12 @@ def detect_intent(question: str) -> str:
     if contains_any(text, ("stock", "inventory", "on hand", "available stock", "maal", "گودام", "اسٹاک")):
         return "stock_balance"
 
+    if "top" in text and contains_any(text, ("customer", "customers", "client", "clients")):
+        return "sales_summary"
+
+    if "top" in text and contains_any(text, ("supplier", "suppliers", "vendor", "vendors")):
+        return "purchase_summary"
+
     if contains_any(text, ("customer", "customers", "client", "گاہک", "کسٹمر")):
         return "customer_summary"
 

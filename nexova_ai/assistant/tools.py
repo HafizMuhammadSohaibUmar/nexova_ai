@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from calendar import monthrange
+from dataclasses import dataclass
+from datetime import date, timedelta
 from time import perf_counter
 from typing import Any
 
@@ -11,6 +14,13 @@ from nexova_ai.assistant.contracts import ToolSpec, response
 from nexova_ai.assistant.permissions import can_read_doctype
 
 MAX_ROWS = 500
+
+
+@dataclass(frozen=True)
+class QueryContext:
+    filters: dict[str, Any]
+    label: str
+    filters_applied: dict[str, Any]
 
 
 def execute_tool(tool: ToolSpec, question: str) -> dict[str, Any]:
@@ -28,58 +38,81 @@ def execute_tool(tool: ToolSpec, question: str) -> dict[str, Any]:
 
 
 def sales_summary(question: str) -> dict[str, Any]:
-    today_only = "today" in question.lower() or "daily" in question.lower()
-    filters: dict[str, Any] = {"docstatus": 1}
+    context = _invoice_context(
+        question,
+        party_field="customer",
+        party_markers=(" customer ", " client ", " for customer ", " for client "),
+    )
 
-    if today_only:
-        filters["posting_date"] = getdate(nowdate())
-
+    fields = ["grand_total", "currency", "customer"]
     rows = _get_rows(
         "Sales Invoice",
-        filters=filters,
-        fields=["grand_total", "currency"],
+        filters=context.filters,
+        fields=fields,
         order_by="posting_date desc, posting_time desc, creation desc",
     )
     totals = _sum_by_currency(rows, "grand_total")
-    label = "Today's submitted sales" if today_only else "Submitted sales"
-    message = _summary_message(label, totals, len(rows), "invoice")
+    message = _summary_message(f"{context.label} submitted sales", totals, len(rows), "invoice")
+
+    if _is_top_request(question, ("customer", "customers", "client", "clients")):
+        top_customers = _top_party_totals(rows, "customer", "grand_total")
+        if top_customers:
+            message += " Top customers: " + _format_top_totals(top_customers)
 
     return response(
         message,
         intent="sales_summary",
         tool_name="sales_summary",
-        data={"type": "sales_summary", "count": len(rows), "totals_by_currency": totals},
+        data={
+            "type": "sales_summary",
+            "count": len(rows),
+            "totals_by_currency": totals,
+            "filters_applied": context.filters_applied,
+        },
     ).as_dict()
 
 
 def purchase_summary(question: str) -> dict[str, Any]:
+    context = _invoice_context(
+        question,
+        party_field="supplier",
+        party_markers=(" supplier ", " vendor ", " for supplier ", " for vendor "),
+    )
     rows = _get_rows(
         "Purchase Invoice",
-        filters={"docstatus": 1},
+        filters=context.filters,
         fields=["grand_total", "currency"],
         order_by="posting_date desc, creation desc",
     )
     totals = _sum_by_currency(rows, "grand_total")
 
     return response(
-        _summary_message("Submitted purchases", totals, len(rows), "invoice"),
+        _summary_message(f"{context.label} submitted purchases", totals, len(rows), "invoice"),
         intent="purchase_summary",
         tool_name="purchase_summary",
-        data={"type": "purchase_summary", "count": len(rows), "totals_by_currency": totals},
+        data={
+            "type": "purchase_summary",
+            "count": len(rows),
+            "totals_by_currency": totals,
+            "filters_applied": context.filters_applied,
+        },
     ).as_dict()
 
 
 def stock_balance(question: str) -> dict[str, Any]:
     item_code = _extract_after_marker(question, (" for ", " item ", " item code "))
+    warehouse = _extract_after_marker(question, (" warehouse ", " in warehouse ", " at warehouse "))
     filters: dict[str, Any] = {}
 
     if item_code:
         filters["item_code"] = item_code
+    if warehouse:
+        filters["warehouse"] = warehouse
 
     rows = _get_rows(
         "Bin",
         filters=filters,
-        fields=["actual_qty"],
+        fields=["actual_qty", "item_code", "warehouse"],
         order_by="actual_qty desc",
     )
     total_actual = sum(flt(row.get("actual_qty")) for row in rows)
@@ -96,16 +129,24 @@ def stock_balance(question: str) -> dict[str, Any]:
         data={
             "type": "stock_balance",
             "item_code": item_code,
+            "warehouse": warehouse,
             "total_actual_qty": total_actual,
             "count": len(rows),
+            "filters_applied": _compact_filters(filters),
         },
     ).as_dict()
 
 
 def receivables_summary(question: str) -> dict[str, Any]:
+    context = _invoice_context(
+        question,
+        party_field="customer",
+        party_markers=(" customer ", " client ", " for customer ", " for client "),
+    )
+    context.filters["outstanding_amount"] = [">", 0]
     rows = _get_rows(
         "Sales Invoice",
-        filters={"docstatus": 1, "outstanding_amount": [">", 0]},
+        filters=context.filters,
         fields=["outstanding_amount", "currency"],
         order_by="due_date asc, posting_date asc",
     )
@@ -115,14 +156,25 @@ def receivables_summary(question: str) -> dict[str, Any]:
         _summary_message("Pending receivables", totals, len(rows), "invoice"),
         intent="receivables_summary",
         tool_name="receivables_summary",
-        data={"type": "receivables_summary", "count": len(rows), "totals_by_currency": totals},
+        data={
+            "type": "receivables_summary",
+            "count": len(rows),
+            "totals_by_currency": totals,
+            "filters_applied": context.filters_applied,
+        },
     ).as_dict()
 
 
 def payables_summary(question: str) -> dict[str, Any]:
+    context = _invoice_context(
+        question,
+        party_field="supplier",
+        party_markers=(" supplier ", " vendor ", " for supplier ", " for vendor "),
+    )
+    context.filters["outstanding_amount"] = [">", 0]
     rows = _get_rows(
         "Purchase Invoice",
-        filters={"docstatus": 1, "outstanding_amount": [">", 0]},
+        filters=context.filters,
         fields=["outstanding_amount", "currency"],
         order_by="due_date asc, posting_date asc",
     )
@@ -132,7 +184,12 @@ def payables_summary(question: str) -> dict[str, Any]:
         _summary_message("Pending payables", totals, len(rows), "invoice"),
         intent="payables_summary",
         tool_name="payables_summary",
-        data={"type": "payables_summary", "count": len(rows), "totals_by_currency": totals},
+        data={
+            "type": "payables_summary",
+            "count": len(rows),
+            "totals_by_currency": totals,
+            "filters_applied": context.filters_applied,
+        },
     ).as_dict()
 
 
@@ -186,15 +243,15 @@ def item_lookup(question: str) -> dict[str, Any]:
 
 
 def quotation_summary(question: str) -> dict[str, Any]:
-    return _document_count_summary("Quotation", "quotation_summary", "Quotation")
+    return _document_count_summary(question, "Quotation", "quotation_summary", "Quotation")
 
 
 def sales_order_summary(question: str) -> dict[str, Any]:
-    return _document_count_summary("Sales Order", "sales_order_summary", "Sales order")
+    return _document_count_summary(question, "Sales Order", "sales_order_summary", "Sales order")
 
 
 def purchase_order_summary(question: str) -> dict[str, Any]:
-    return _document_count_summary("Purchase Order", "purchase_order_summary", "Purchase order")
+    return _document_count_summary(question, "Purchase Order", "purchase_order_summary", "Purchase order")
 
 
 def invoice_summary(question: str) -> dict[str, Any]:
@@ -203,10 +260,11 @@ def invoice_summary(question: str) -> dict[str, Any]:
     return sales_summary(question)
 
 
-def _document_count_summary(doctype: str, intent: str, label: str) -> dict[str, Any]:
+def _document_count_summary(question: str, doctype: str, intent: str, label: str) -> dict[str, Any]:
+    context = _document_context(question, date_field="transaction_date")
     rows = _get_rows(
         doctype,
-        filters={},
+        filters=context.filters,
         fields=["name", "status"],
         order_by="modified desc",
         page_length=MAX_ROWS,
@@ -215,7 +273,12 @@ def _document_count_summary(doctype: str, intent: str, label: str) -> dict[str, 
         f"There are {len(rows)} readable {label.lower()} record(s) in the current bounded result.",
         intent=intent,
         tool_name=intent,
-        data={"type": intent, "count": len(rows), "row_count": len(rows)},
+        data={
+            "type": intent,
+            "count": len(rows),
+            "row_count": len(rows),
+            "filters_applied": context.filters_applied,
+        },
     ).as_dict()
 
 
@@ -294,6 +357,157 @@ def _extract_after_marker(question: str, markers: tuple[str, ...]) -> str | None
     for marker in markers:
         if marker in lowered:
             value = question[lowered.rfind(marker) + len(marker) :].strip()
+            value = _trim_extracted_value(value)
             return value[:140] or None
 
     return None
+
+
+def _invoice_context(
+    question: str,
+    *,
+    party_field: str,
+    party_markers: tuple[str, ...],
+) -> QueryContext:
+    context = _document_context(question, date_field="posting_date")
+    filters = dict(context.filters)
+    filters["docstatus"] = 1
+    filters_applied = dict(context.filters_applied)
+
+    company = _extract_after_marker(question, (" company ", " for company ", " in company "))
+    party = _extract_after_marker(question, party_markers)
+
+    if company:
+        filters["company"] = company
+        filters_applied["company"] = company
+
+    if party:
+        filters[party_field] = party
+        filters_applied[party_field] = party
+
+    return QueryContext(filters=filters, label=context.label, filters_applied=filters_applied)
+
+
+def _document_context(question: str, *, date_field: str) -> QueryContext:
+    filters: dict[str, Any] = {}
+    filters_applied: dict[str, Any] = {}
+    date_range = _date_range_from_question(question)
+
+    if date_range:
+        label, start, end = date_range
+        filters[date_field] = ["between", [start, end]]
+        filters_applied["date_range"] = {
+            "label": label,
+            "from": str(start),
+            "to": str(end),
+        }
+        return QueryContext(filters=filters, label=label, filters_applied=filters_applied)
+
+    return QueryContext(filters=filters, label="Matching", filters_applied=filters_applied)
+
+
+def _date_range_from_question(question: str) -> tuple[str, date, date] | None:
+    text = question.lower()
+    today = getdate(nowdate())
+
+    if any(term in text for term in ("today", "daily", "aaj", "آج")):
+        return ("Today's", today, today)
+
+    if any(term in text for term in ("yesterday", "kal", "گزشتہ روز")):
+        target = today - timedelta(days=1)
+        return ("Yesterday's", target, target)
+
+    if any(term in text for term in ("this week", "current week", "is haftay", "اس ہفتے")):
+        start = today - timedelta(days=today.weekday())
+        return ("This week's", start, today)
+
+    if any(term in text for term in ("last week", "previous week", "pichle haftay", "پچھلے ہفتے")):
+        this_week_start = today - timedelta(days=today.weekday())
+        start = this_week_start - timedelta(days=7)
+        end = this_week_start - timedelta(days=1)
+        return ("Last week's", start, end)
+
+    if any(term in text for term in ("last month", "previous month", "pichle mahine", "پچھلے مہینے")):
+        first_this_month = today.replace(day=1)
+        end = first_this_month - timedelta(days=1)
+        start = end.replace(day=1)
+        return ("Last month's", start, end)
+
+    if any(term in text for term in ("this month", "current month", "is mahine", "اس مہینے")):
+        end_day = monthrange(today.year, today.month)[1]
+        start = today.replace(day=1)
+        end = today.replace(day=end_day)
+        return ("This month's", start, end)
+
+    return None
+
+
+def _is_top_request(question: str, dimensions: tuple[str, ...]) -> bool:
+    text = question.lower()
+    return "top" in text and any(dimension in text for dimension in dimensions)
+
+
+def _top_party_totals(
+    rows: list[dict[str, Any]],
+    party_field: str,
+    amount_field: str,
+    limit: int = 5,
+) -> list[dict[str, Any]]:
+    totals: dict[tuple[str, str], float] = {}
+    fallback_currency = frappe.defaults.get_global_default("currency") or "Currency"
+
+    for row in rows:
+        party = row.get(party_field)
+        if not party:
+            continue
+
+        currency = row.get("currency") or fallback_currency
+        key = (party, currency)
+        totals[key] = totals.get(key, 0.0) + flt(row.get(amount_field))
+
+    ranked = sorted(totals.items(), key=lambda item: item[1], reverse=True)
+    return [
+        {"name": party, "currency": currency, "total": total}
+        for (party, currency), total in ranked[:limit]
+    ]
+
+
+def _format_top_totals(rows: list[dict[str, Any]]) -> str:
+    parts = []
+
+    for row in rows:
+        total = frappe.format_value(
+            row["total"],
+            {"fieldtype": "Currency", "options": row["currency"]},
+        )
+        parts.append(f"{row['name']} ({total})")
+
+    return ", ".join(parts)
+
+
+def _compact_filters(filters: dict[str, Any]) -> dict[str, Any]:
+    return {key: value for key, value in filters.items() if key != "docstatus"}
+
+
+def _trim_extracted_value(value: str) -> str:
+    stop_words = (
+        " today",
+        " yesterday",
+        " this week",
+        " last week",
+        " this month",
+        " last month",
+        " company ",
+        " customer ",
+        " supplier ",
+        " warehouse ",
+    )
+    lowered = value.lower()
+    cut_at = len(value)
+
+    for stop_word in stop_words:
+        index = lowered.find(stop_word)
+        if index >= 0:
+            cut_at = min(cut_at, index)
+
+    return value[:cut_at].strip(" .,;:")

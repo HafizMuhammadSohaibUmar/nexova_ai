@@ -179,6 +179,22 @@ class AppStructureTest(unittest.TestCase):
         self.assertIn("handleAction(data)", script)
         self.assertIn("frappe.set_route.apply", script)
 
+    def test_frontend_requires_voice_transcript_confirmation(self) -> None:
+        script = (PAGE / "nexova_ai_assistant.js").read_text(encoding="utf-8")
+
+        self.assertIn("Transcript ready. Review it, then tap Ask.", script)
+        self.assertNotIn("askQuestion(transcript);", script)
+
+    def test_live_tools_include_date_and_entity_filters(self) -> None:
+        source = (ASSISTANT / "tools.py").read_text(encoding="utf-8")
+
+        self.assertIn("_date_range_from_question", source)
+        self.assertIn("_invoice_context", source)
+        self.assertIn("filters_applied", source)
+        self.assertIn('"customer"', source)
+        self.assertIn('"supplier"', source)
+        self.assertIn('"warehouse"', source)
+
 
 if __name__ == "__main__":
     unittest.main()
