@@ -193,6 +193,7 @@ class AppStructureTest(unittest.TestCase):
             "rag.py",
             "knowledge.py",
             "voice.py",
+            "llm.py",
             "retention.py",
             "orchestrator.py",
         ):
@@ -214,6 +215,24 @@ class AppStructureTest(unittest.TestCase):
             "sales_order_summary",
             "purchase_order_summary",
             "invoice_summary",
+            "profit_and_loss",
+            "cash_bank_balance",
+            "account_balance",
+            "party_ledger",
+            "item_wise_sales",
+            "customer_wise_sales",
+            "low_stock",
+            "slow_moving_items",
+            "gross_profit",
+            "expenses_summary",
+            "payroll_summary",
+            "attendance_summary",
+            "manufacturing_summary",
+            "crm_summary",
+            "project_summary",
+            "asset_summary",
+            "tax_summary",
+            "trend_analysis",
         ):
             self.assertIn(tool_name, source)
 
@@ -267,6 +286,10 @@ class AppStructureTest(unittest.TestCase):
         orchestrator = (ASSISTANT / "orchestrator.py").read_text(encoding="utf-8")
 
         self.assertIn("find_navigation_routes", discovery)
+        self.assertIn("find_specific_document", discovery)
+        self.assertIn("_dashboards", discovery)
+        self.assertIn("_pages", discovery)
+        self.assertIn("_modules", discovery)
         self.assertIn("find_readable_doctype", discovery)
         self.assertIn("safe_list_fields", discovery)
         self.assertIn("fuzzy_match_score", discovery)
@@ -274,7 +297,50 @@ class AppStructureTest(unittest.TestCase):
         self.assertIn("dynamic_doctype_list", dynamic_tools)
         self.assertIn("dynamic_doctype_count", dynamic_tools)
         self.assertIn("find_navigation_routes", navigation)
+        self.assertIn("route_options", navigation)
         self.assertIn("answer_dynamic_query", orchestrator)
+
+    def test_navigation_frontend_applies_route_options(self) -> None:
+        script = (PAGE / "nexova_ai_assistant.js").read_text(encoding="utf-8")
+
+        self.assertIn("frappe.route_options", script)
+
+    def test_llm_fallback_is_behind_registry(self) -> None:
+        llm = (ASSISTANT / "llm.py").read_text(encoding="utf-8")
+        orchestrator = (ASSISTANT / "orchestrator.py").read_text(encoding="utf-8")
+
+        self.assertIn("TOOL_REGISTRY", llm)
+        self.assertIn("suggest_intent", orchestrator)
+        self.assertIn('provider in {"Disabled", "Deterministic"}', llm)
+
+    def test_urdu_and_roman_urdu_core_phrases_exist(self) -> None:
+        vocabulary = (ASSISTANT / "vocabulary.py").read_text(encoding="utf-8")
+        tools = (ASSISTANT / "tools.py").read_text(encoding="utf-8")
+
+        for phrase in ("kholo", "dikhao", "wasooli", "kharcha", "tankhwa", "آج", "اس مہینے"):
+            self.assertIn(phrase, vocabulary + tools)
+
+    def test_live_tools_cover_requested_erp_modules(self) -> None:
+        source = (ASSISTANT / "tools.py").read_text(encoding="utf-8")
+
+        for function_name in (
+            "profit_and_loss",
+            "cash_bank_balance",
+            "account_balance",
+            "party_ledger",
+            "item_wise_sales",
+            "low_stock",
+            "expenses_summary",
+            "payroll_summary",
+            "attendance_summary",
+            "manufacturing_summary",
+            "crm_summary",
+            "project_summary",
+            "asset_summary",
+            "tax_summary",
+            "trend_analysis",
+        ):
+            self.assertIn(f"def {function_name}", source)
 
     def test_voice_strategy_reaches_frontend(self) -> None:
         api = (APP / "api.py").read_text(encoding="utf-8")

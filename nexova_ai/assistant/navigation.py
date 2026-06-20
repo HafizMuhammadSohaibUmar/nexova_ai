@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from nexova_ai.assistant.contracts import NavigationTarget, response
-from nexova_ai.assistant.discovery import find_navigation_routes
+from nexova_ai.assistant.discovery import find_navigation_routes, find_specific_document
 from nexova_ai.assistant.intent import normalize_text
 from nexova_ai.assistant.permissions import can_read_doctype
 from nexova_ai.assistant.vocabulary import fuzzy_match_score
@@ -93,6 +93,26 @@ NAVIGATION_REGISTRY: tuple[NavigationTarget, ...] = (
 
 def resolve_navigation(question: str):
     text = normalize_text(question)
+    specific_document = find_specific_document(question)
+    if specific_document:
+        if specific_document.category == "ambiguous":
+            return response(
+                f"I found more than one matching {specific_document.label}. Please give the exact document number.",
+                intent="navigation",
+                data={"type": "navigation", "action": "clarify", "route": list(specific_document.route)},
+            )
+
+        return response(
+            f"Opening {specific_document.label}.",
+            intent="navigation",
+            data={
+                "type": "navigation",
+                "action": "navigate",
+                "route": list(specific_document.route),
+                "label": specific_document.label,
+            },
+        )
+
     matches = [
         target
         for target in NAVIGATION_REGISTRY
@@ -134,6 +154,7 @@ def resolve_navigation(question: str):
         )
 
     target = readable[0]
+    route_options = _route_options_for_question(question, target.category)
     return response(
         f"Opening {target.label}.",
         intent="navigation",
@@ -141,6 +162,7 @@ def resolve_navigation(question: str):
             "type": "navigation",
             "action": "navigate",
             "route": list(target.route),
+            "route_options": route_options,
             "label": target.label,
         },
     )
@@ -156,6 +178,7 @@ def _navigation_response(matches):
         )
 
     target = matches[0]
+    route_options = _route_options_for_question("", target.category)
     return response(
         f"Opening {target.label}.",
         intent="navigation",
@@ -163,6 +186,24 @@ def _navigation_response(matches):
             "type": "navigation",
             "action": "navigate",
             "route": list(target.route),
+            "route_options": route_options,
             "label": target.label,
         },
     )
+
+
+def _route_options_for_question(question: str, category: str) -> dict:
+    if category != "report":
+        return {}
+
+    text = normalize_text(question)
+    options = {}
+    if "today" in text or "aaj" in text:
+        options["from_date"] = "Today"
+        options["to_date"] = "Today"
+    if "company" in text:
+        company = text.split("company", 1)[1].strip()
+        if company:
+            options["company"] = company[:140]
+
+    return options

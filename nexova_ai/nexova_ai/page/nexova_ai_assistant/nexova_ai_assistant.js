@@ -265,6 +265,9 @@ frappe.pages["nexova-ai-assistant"].on_page_load = function (wrapper) {
     }
 
     setTimeout(function () {
+      if (data.route_options && Object.keys(data.route_options).length) {
+        frappe.route_options = data.route_options;
+      }
       frappe.set_route.apply(frappe, data.route);
     }, 400);
   }

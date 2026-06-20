@@ -310,6 +310,221 @@ def invoice_summary(question: str) -> dict[str, Any]:
     return sales_summary(question)
 
 
+def profit_and_loss(question: str) -> dict[str, Any]:
+    context = _document_context(question, date_field="posting_date")
+    income = _gl_total(("Income",), context.filters)
+    expense = _gl_total(("Expense",), context.filters)
+    profit = income - expense
+    currency = frappe.defaults.get_global_default("currency") or "Currency"
+    return response(
+        f"Bounded profit and loss estimate: income {_money(income, currency)}, expenses {_money(expense, currency)}, net {_money(profit, currency)}. Use the official Profit and Loss Statement for audited reporting.",
+        intent="profit_and_loss",
+        tool_name="profit_and_loss",
+        data={
+            "type": "profit_and_loss",
+            "filters_applied": context.filters_applied,
+            "summary_cards": [
+                {"label": "Income", "value": _money(income, currency)},
+                {"label": "Expenses", "value": _money(expense, currency)},
+                {"label": "Net", "value": _money(profit, currency)},
+            ],
+            "report_route": ["query-report", "Profit and Loss Statement"],
+        },
+    ).as_dict()
+
+
+def cash_bank_balance(question: str) -> dict[str, Any]:
+    if not _doctype_exists("Account"):
+        return _missing_doctype("Account", "cash_bank_balance")
+
+    accounts = frappe.get_list(
+        "Account",
+        filters={"account_type": ["in", ["Cash", "Bank"]]},
+        fields=["name", "account_name", "account_type"],
+        limit_page_length=_configured_max_rows(),
+    )
+    rows = []
+    total = 0.0
+    for account in accounts:
+        balance = _account_balance(account["name"])
+        total += balance
+        rows.append([account.get("account_name") or account["name"], account.get("account_type") or "", _money(balance)])
+
+    return response(
+        f"Cash and bank bounded balance is {_money(total)} across {len(accounts)} readable account(s).",
+        intent="cash_bank_balance",
+        tool_name="cash_bank_balance",
+        data={
+            "type": "cash_bank_balance",
+            "count": len(accounts),
+            "summary_cards": [{"label": "Accounts", "value": len(accounts)}, {"label": "Balance", "value": _money(total)}],
+            "table": {"title": "Cash and Bank Accounts", "columns": ["Account", "Type", "Balance"], "rows": rows[:10]},
+        },
+    ).as_dict()
+
+
+def account_balance(question: str) -> dict[str, Any]:
+    account = _extract_after_marker(question, (" account ", " khata ", " hisab "))
+    if not account:
+        return response(
+            "Please specify the account name for account balance.",
+            status="Blocked",
+            intent="account_balance",
+            tool_name="account_balance",
+            data={"type": "clarify", "missing": "account"},
+        ).as_dict()
+
+    rows = frappe.get_list("Account", filters={"name": ["like", f"%{account}%"]}, fields=["name"], limit_page_length=2)
+    if len(rows) != 1:
+        return response(
+            "I found no account or more than one matching account. Please give the exact account name.",
+            status="Blocked",
+            intent="account_balance",
+            tool_name="account_balance",
+            data={"type": "clarify", "matches": [row["name"] for row in rows]},
+        ).as_dict()
+
+    balance = _account_balance(rows[0]["name"])
+    return response(
+        f"Account balance for {rows[0]['name']} is {_money(balance)}.",
+        intent="account_balance",
+        tool_name="account_balance",
+        data={"type": "account_balance", "account": rows[0]["name"], "summary_cards": [{"label": "Balance", "value": _money(balance)}]},
+    ).as_dict()
+
+
+def party_ledger(question: str) -> dict[str, Any]:
+    return _report_intent_response(
+        "party_ledger",
+        "I can open the party ledger report. Please include the exact customer or supplier if you want it filtered.",
+        ["query-report", "General Ledger"],
+    )
+
+
+def item_wise_sales(question: str) -> dict[str, Any]:
+    context = _document_context(question, date_field="posting_date")
+    rows = _get_rows(
+        "Sales Invoice Item",
+        filters={},
+        fields=["item_code", "item_name", "amount"],
+        order_by="modified desc",
+    )
+    totals: dict[str, float] = {}
+    for row in rows:
+        item = row.get("item_code") or row.get("item_name") or "Unknown"
+        totals[item] = totals.get(item, 0.0) + flt(row.get("amount"))
+    ranked = sorted(totals.items(), key=lambda item: item[1], reverse=True)[:10]
+    return response(
+        f"Showing top {len(ranked)} item-wise sales rows in the bounded result.",
+        intent="item_wise_sales",
+        tool_name="item_wise_sales",
+        data={
+            "type": "item_wise_sales",
+            "filters_applied": context.filters_applied,
+            "summary_cards": [{"label": "Items", "value": len(ranked)}],
+            "table": {"title": "Item-wise Sales", "columns": ["Item", "Amount"], "rows": [[name, _money(total)] for name, total in ranked]},
+        },
+    ).as_dict()
+
+
+def customer_wise_sales(question: str) -> dict[str, Any]:
+    return sales_summary("top customer " + question)
+
+
+def low_stock(question: str) -> dict[str, Any]:
+    rows = _get_rows(
+        "Bin",
+        filters={"actual_qty": ["<=", 0]},
+        fields=["item_code", "warehouse", "actual_qty"],
+        order_by="actual_qty asc",
+    )
+    return response(
+        f"There are {len(rows)} readable low or zero stock bin(s) in the bounded result.",
+        intent="low_stock",
+        tool_name="low_stock",
+        data={
+            "type": "low_stock",
+            "count": len(rows),
+            "summary_cards": [{"label": "Low Stock Bins", "value": len(rows)}],
+            "table": {"title": "Low Stock", "columns": ["Item", "Warehouse", "Actual Qty"], "rows": [[r.get("item_code") or "", r.get("warehouse") or "", _format_float(flt(r.get("actual_qty")))] for r in rows[:10]]},
+        },
+    ).as_dict()
+
+
+def slow_moving_items(question: str) -> dict[str, Any]:
+    return _report_intent_response(
+        "slow_moving_items",
+        "Slow-moving item analysis needs movement history and ageing rules. I can open Stock Ledger or show recent item/stock data for review.",
+        ["query-report", "Stock Ledger"],
+    )
+
+
+def gross_profit(question: str) -> dict[str, Any]:
+    return _report_intent_response(
+        "gross_profit",
+        "Gross profit should be verified from ERPNext's Gross Profit report because valuation and returns affect the calculation.",
+        ["query-report", "Gross Profit"],
+    )
+
+
+def expenses_summary(question: str) -> dict[str, Any]:
+    context = _document_context(question, date_field="posting_date")
+    total = _gl_total(("Expense",), context.filters)
+    return response(
+        f"Bounded expense total is {_money(total)}.",
+        intent="expenses_summary",
+        tool_name="expenses_summary",
+        data={"type": "expenses_summary", "filters_applied": context.filters_applied, "summary_cards": [{"label": "Expenses", "value": _money(total)}]},
+    ).as_dict()
+
+
+def payroll_summary(question: str) -> dict[str, Any]:
+    return _doctype_count_summary("Salary Slip", "payroll_summary", "Payroll")
+
+
+def attendance_summary(question: str) -> dict[str, Any]:
+    return _doctype_count_summary("Attendance", "attendance_summary", "Attendance")
+
+
+def manufacturing_summary(question: str) -> dict[str, Any]:
+    return _doctype_count_summary("Work Order", "manufacturing_summary", "Manufacturing work orders")
+
+
+def crm_summary(question: str) -> dict[str, Any]:
+    lead_count = _safe_count("Lead")
+    opportunity_count = _safe_count("Opportunity")
+    return response(
+        f"CRM bounded summary: {lead_count} readable lead(s), {opportunity_count} readable opportunit(ies).",
+        intent="crm_summary",
+        tool_name="crm_summary",
+        data={"type": "crm_summary", "summary_cards": [{"label": "Leads", "value": lead_count}, {"label": "Opportunities", "value": opportunity_count}]},
+    ).as_dict()
+
+
+def project_summary(question: str) -> dict[str, Any]:
+    return _doctype_count_summary("Project", "project_summary", "Projects")
+
+
+def asset_summary(question: str) -> dict[str, Any]:
+    return _doctype_count_summary("Asset", "asset_summary", "Assets")
+
+
+def tax_summary(question: str) -> dict[str, Any]:
+    return _report_intent_response(
+        "tax_summary",
+        "Tax answers depend on local configuration and tax templates. I can open ERPNext tax reports or show invoice tax rows after exact filters are provided.",
+        ["query-report", "Sales Register"],
+    )
+
+
+def trend_analysis(question: str) -> dict[str, Any]:
+    return _report_intent_response(
+        "trend_analysis",
+        "Trend and forecasting answers need a defined metric and period. Please ask for a specific comparison, such as monthly sales trend or customer-wise sales this month.",
+        ["query-report", "Sales Analytics"],
+    )
+
+
 def _document_count_summary(question: str, doctype: str, intent: str, label: str) -> dict[str, Any]:
     context = _document_context(question, date_field="transaction_date")
     rows = _get_rows(
@@ -335,6 +550,38 @@ def _document_count_summary(question: str, doctype: str, intent: str, label: str
                 "rows": [[row.get("name") or "", row.get("status") or ""] for row in rows[:10]],
             },
         },
+    ).as_dict()
+
+
+def _doctype_count_summary(doctype: str, intent: str, label: str) -> dict[str, Any]:
+    if not _doctype_exists(doctype):
+        return _missing_doctype(doctype, intent)
+
+    count = _count_readable(doctype)
+    return response(
+        f"There are {count} readable {label.lower()} record(s) in the bounded result.",
+        intent=intent,
+        tool_name=intent,
+        data={"type": intent, "count": count, "summary_cards": [{"label": label, "value": count}]},
+    ).as_dict()
+
+
+def _report_intent_response(intent: str, message: str, route: list[str]) -> dict[str, Any]:
+    return response(
+        message,
+        intent=intent,
+        tool_name=intent,
+        data={"type": intent, "action": "navigate", "route": route},
+    ).as_dict()
+
+
+def _missing_doctype(doctype: str, intent: str) -> dict[str, Any]:
+    return response(
+        f"{doctype} is not available on this site or app configuration.",
+        status="Blocked",
+        intent=intent,
+        tool_name=intent,
+        data={"type": intent, "missing_doctype": doctype},
     ).as_dict()
 
 
@@ -618,3 +865,72 @@ def _configured_max_rows() -> int:
         configured = MAX_ROWS_CAP
 
     return max(1, min(configured, MAX_ROWS_CAP))
+
+
+def _doctype_exists(doctype: str) -> bool:
+    try:
+        return bool(frappe.db.exists("DocType", doctype))
+    except Exception:
+        return False
+
+
+def _safe_count(doctype: str) -> int:
+    if not _doctype_exists(doctype) or not can_read_doctype(doctype):
+        return 0
+
+    return _count_readable(doctype)
+
+
+def _account_balance(account: str) -> float:
+    if not _doctype_exists("GL Entry") or not can_read_doctype("GL Entry"):
+        raise frappe.PermissionError
+
+    rows = frappe.get_list(
+        "GL Entry",
+        filters={"account": account, "is_cancelled": 0},
+        fields=["debit", "credit"],
+        limit_page_length=_configured_max_rows(),
+    )
+    return sum(flt(row.get("debit")) - flt(row.get("credit")) for row in rows)
+
+
+def _gl_total(root_types: tuple[str, ...], filters: dict[str, Any]) -> float:
+    if not _doctype_exists("GL Entry") or not can_read_doctype("GL Entry"):
+        return 0.0
+
+    gl_filters = dict(filters)
+    gl_filters["is_cancelled"] = 0
+    rows = frappe.get_list(
+        "GL Entry",
+        filters=gl_filters,
+        fields=["account", "debit", "credit"],
+        limit_page_length=_configured_max_rows(),
+    )
+
+    total = 0.0
+    for row in rows:
+        account_type = _account_root_type(row.get("account"))
+        if account_type not in root_types:
+            continue
+
+        total += flt(row.get("credit")) - flt(row.get("debit"))
+
+    return total
+
+
+def _account_root_type(account: str | None) -> str:
+    if not account:
+        return ""
+
+    try:
+        account_doc = frappe.get_cached_doc("Account", account)
+        return account_doc.root_type or account_doc.account_type or ""
+    except Exception:
+        return ""
+
+
+def _money(value: float, currency: str | None = None) -> str:
+    return frappe.format_value(
+        value,
+        {"fieldtype": "Currency", "options": currency or frappe.defaults.get_global_default("currency")},
+    )

@@ -74,8 +74,100 @@ def find_navigation_routes(question: str, limit: int = 8) -> list[DiscoveredRout
                 )
             )
 
+    for page in _pages():
+        score = _match_score(text, page["label"], page["aliases"])
+        if score:
+            routes.append(
+                (
+                    score,
+                    DiscoveredRoute(
+                        name=f"page:{page['name']}",
+                        label=f"{page['label']} Page",
+                        route=(page["name"],),
+                        category="page",
+                    ),
+                )
+            )
+
+    for module in _modules():
+        score = _match_score(text, module["label"], module["aliases"])
+        if score:
+            routes.append(
+                (
+                    score,
+                    DiscoveredRoute(
+                        name=f"module:{module['name']}",
+                        label=f"{module['label']} Module",
+                        route=(_slug(module["name"]),),
+                        category="module",
+                    ),
+                )
+            )
+
+    for dashboard in _dashboards():
+        score = _match_score(text, dashboard["label"], dashboard["aliases"])
+        if score:
+            routes.append(
+                (
+                    score,
+                    DiscoveredRoute(
+                        name=f"dashboard:{dashboard['name']}",
+                        label=f"{dashboard['label']} Dashboard",
+                        route=("dashboard-view", dashboard["name"]),
+                        category="dashboard",
+                    ),
+                )
+            )
+
     ranked = sorted(routes, key=lambda item: item[0], reverse=True)
     return [route for _, route in ranked[:limit]]
+
+
+def find_specific_document(question: str) -> DiscoveredRoute | None:
+    text = canonical_text(question)
+    doctype = find_readable_doctype(question)
+    if not doctype:
+        return None
+
+    document_name = _extract_document_name(text)
+    filters: dict[str, Any] = {}
+    order_by = "modified desc"
+
+    if document_name:
+        filters["name"] = ["like", f"%{document_name}%"]
+    elif any(term in text for term in ("last", "latest", "recent", "akhri", "pichla", "\u0622\u062e\u0631\u06cc")):
+        order_by = "creation desc"
+    else:
+        return None
+
+    rows = frappe.get_list(
+        doctype["name"],
+        filters=filters,
+        fields=["name"],
+        order_by=order_by,
+        limit_page_length=2,
+    )
+
+    if not rows:
+        return None
+
+    if len(rows) > 1 and document_name:
+        return DiscoveredRoute(
+            name=f"ambiguous:{doctype['name']}",
+            label=f"Multiple {doctype['label']} records",
+            route=("List", doctype["name"]),
+            category="ambiguous",
+            required_doctype=doctype["name"],
+        )
+
+    name = rows[0]["name"]
+    return DiscoveredRoute(
+        name=f"document:{doctype['name']}:{name}",
+        label=f"{doctype['label']} {name}",
+        route=("Form", doctype["name"], name),
+        category="document",
+        required_doctype=doctype["name"],
+    )
 
 
 def find_readable_doctype(question: str) -> dict[str, Any] | None:
@@ -184,6 +276,62 @@ def _workspaces() -> list[dict[str, Any]]:
     ]
 
 
+def _dashboards() -> list[dict[str, Any]]:
+    if not frappe.db.exists("DocType", "Dashboard"):
+        return []
+
+    dashboards = frappe.get_all(
+        "Dashboard",
+        fields=["name", "dashboard_name", "module"],
+        order_by="name asc",
+        limit_page_length=500,
+    )
+    return [
+        {
+            "name": dashboard["name"],
+            "label": dashboard.get("dashboard_name") or dashboard["name"],
+            "module": dashboard.get("module"),
+            "aliases": _aliases_for_label(dashboard.get("dashboard_name") or dashboard["name"]),
+        }
+        for dashboard in dashboards
+    ]
+
+
+def _pages() -> list[dict[str, Any]]:
+    pages = frappe.get_all(
+        "Page",
+        fields=["name", "title", "module"],
+        order_by="title asc, name asc",
+        limit_page_length=500,
+    )
+    return [
+        {
+            "name": page["name"],
+            "label": page.get("title") or page["name"],
+            "module": page.get("module"),
+            "aliases": _aliases_for_label(page.get("title") or page["name"]),
+        }
+        for page in pages
+    ]
+
+
+def _modules() -> list[dict[str, Any]]:
+    modules = frappe.get_all(
+        "Module Def",
+        fields=["name", "module_name"],
+        order_by="module_name asc, name asc",
+        limit_page_length=500,
+    )
+    return [
+        {
+            "name": module["name"],
+            "label": module.get("module_name") or module["name"],
+            "aliases": _aliases_for_label(module.get("module_name") or module["name"]),
+        }
+        for module in modules
+    ]
+
+
 def _aliases_for_label(label: str) -> tuple[str, ...]:
     return business_aliases_for_label(label)
 
@@ -195,3 +343,15 @@ def _match_score(text: str, label: str, aliases: tuple[str, ...]) -> int:
 
 def _slug(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
+
+
+def _extract_document_name(text: str) -> str | None:
+    markers = (" named ", " name ", " number ", " no ", " id ", " code ")
+    for marker in markers:
+        if marker in text:
+            value = text[text.rfind(marker) + len(marker) :].strip()
+            return value[:120] or None
+
+    tokens = text.split()
+    candidates = [token for token in tokens if any(char.isdigit() for char in token) or "-" in token or "/" in token]
+    return candidates[-1] if candidates else None

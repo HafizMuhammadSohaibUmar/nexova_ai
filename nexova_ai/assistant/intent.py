@@ -38,6 +38,60 @@ def detect_intent(question: str) -> str:
     if contains_phrase(text, "knowledge"):
         return "knowledge"
 
+    if contains_phrase(text, "profit_loss"):
+        return "profit_and_loss"
+
+    if contains_phrase(text, "cash_bank"):
+        return "cash_bank_balance"
+
+    if contains_phrase(text, "account_balance"):
+        return "account_balance"
+
+    if contains_phrase(text, "party_ledger"):
+        return "party_ledger"
+
+    if contains_phrase(text, "item_sales"):
+        return "item_wise_sales"
+
+    if contains_phrase(text, "customer_sales"):
+        return "customer_wise_sales"
+
+    if contains_phrase(text, "low_stock"):
+        return "low_stock"
+
+    if contains_phrase(text, "slow_moving"):
+        return "slow_moving_items"
+
+    if contains_phrase(text, "gross_profit"):
+        return "gross_profit"
+
+    if contains_phrase(text, "expenses"):
+        return "expenses_summary"
+
+    if contains_phrase(text, "payroll"):
+        return "payroll_summary"
+
+    if contains_phrase(text, "attendance"):
+        return "attendance_summary"
+
+    if contains_phrase(text, "manufacturing"):
+        return "manufacturing_summary"
+
+    if contains_phrase(text, "crm"):
+        return "crm_summary"
+
+    if contains_phrase(text, "project"):
+        return "project_summary"
+
+    if contains_phrase(text, "asset"):
+        return "asset_summary"
+
+    if contains_phrase(text, "tax"):
+        return "tax_summary"
+
+    if contains_phrase(text, "trend"):
+        return "trend_analysis"
+
     if contains_phrase(text, "payables"):
         return "payables_summary"
 
