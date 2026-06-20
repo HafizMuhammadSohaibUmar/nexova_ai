@@ -35,7 +35,7 @@ frappe.pages["nexova-ai-assistant"].on_page_load = function (wrapper) {
         <div class="nexova-ai-messages" role="log" aria-live="polite"></div>
         <form class="nexova-ai-composer">
           <button class="btn btn-default nexova-ai-mic" type="button" title="${__("Voice input")}">
-            <span class="octicon octicon-device-camera-video"></span>
+            ${micIcon()}
           </button>
           <input class="form-control nexova-ai-input" type="text" autocomplete="off" placeholder="${__("Ask: today's sales, stock balance, pending receivables")}" />
           <button class="btn btn-primary nexova-ai-send" type="submit">${__("Ask")}</button>
@@ -126,12 +126,15 @@ frappe.pages["nexova-ai-assistant"].on_page_load = function (wrapper) {
     const label = role === "user" ? __("You") : __("Nexova AI");
     const $message = $(`
       <article class="nexova-ai-message nexova-ai-message-${role}">
-        <div class="nexova-ai-message-label"></div>
+        <div class="nexova-ai-message-label">
+          ${role === "assistant" ? assistantIcon() : ""}
+          <span></span>
+        </div>
         <div class="nexova-ai-message-text"></div>
       </article>
     `);
 
-    $message.find(".nexova-ai-message-label").text(label);
+    $message.find(".nexova-ai-message-label span").text(label);
     $message.find(".nexova-ai-message-text").text(text);
     $messages.append($message);
     $messages.scrollTop($messages.prop("scrollHeight"));
@@ -286,6 +289,29 @@ frappe.pages["nexova-ai-assistant"].on_page_load = function (wrapper) {
         }
       },
     });
+  }
+
+  function micIcon() {
+    return `
+      <svg class="nexova-ai-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Z"></path>
+        <path d="M19 10v1a7 7 0 0 1-14 0v-1"></path>
+        <path d="M12 18v4"></path>
+        <path d="M8 22h8"></path>
+      </svg>
+    `;
+  }
+
+  function assistantIcon() {
+    return `
+      <svg class="nexova-ai-label-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <rect x="5" y="7" width="14" height="12" rx="3"></rect>
+        <path d="M12 3v4"></path>
+        <path d="M8.5 12h.01"></path>
+        <path d="M15.5 12h.01"></path>
+        <path d="M9 16h6"></path>
+      </svg>
+    `;
   }
 };
 
