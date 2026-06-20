@@ -2,6 +2,7 @@ import frappe
 
 from nexova_ai.assistant.orchestrator import ask
 from nexova_ai.assistant.settings import get_settings
+from nexova_ai.assistant.stt import transcribe_audio_bytes
 from nexova_ai.assistant.voice import get_voice_strategy
 
 
@@ -37,3 +38,37 @@ def get_client_config():
             "raw_audio_retention": voice.raw_audio_retention,
         },
     }
+
+
+@frappe.whitelist()
+def transcribe_audio():
+    """Transcribe a short voice command using the configured server-side STT provider."""
+    settings = get_settings()
+    voice = get_voice_strategy(
+        settings.voice_provider,
+        settings.stt_provider,
+        settings.tts_provider,
+        settings.language_mode,
+    )
+
+    if not settings.voice_enabled or not voice.supports_server_stt:
+        frappe.throw("Server-side voice input is not enabled.")
+
+    uploaded = None
+    try:
+        uploaded = frappe.request.files.get("audio")
+    except Exception:
+        uploaded = None
+
+    if not uploaded:
+        frappe.throw("No audio file was received.")
+
+    result = transcribe_audio_bytes(
+        audio=uploaded.read(),
+        filename=getattr(uploaded, "filename", None) or "voice.webm",
+        content_type=getattr(uploaded, "content_type", None),
+        stt_provider=settings.stt_provider,
+        endpoint=settings.local_stt_endpoint,
+        language=voice.recognition_language,
+    )
+    return result.as_dict()

@@ -16,6 +16,9 @@ frappe.pages["nexova-ai-assistant"].on_page_load = function (wrapper) {
     listening: false,
     recognition: null,
     recognitionLanguage: null,
+    supportsServerStt: false,
+    mediaRecorder: null,
+    audioChunks: [],
     ttsEnabled: true,
     voiceEnabled: true,
   };
@@ -64,6 +67,11 @@ frappe.pages["nexova-ai-assistant"].on_page_load = function (wrapper) {
   });
 
   $mic.on("click", function () {
+    if (state.supportsServerStt) {
+      toggleServerRecording();
+      return;
+    }
+
     if (!state.recognition) {
       frappe.show_alert({
         message: __("Voice input is not supported in this browser."),
@@ -88,6 +96,91 @@ frappe.pages["nexova-ai-assistant"].on_page_load = function (wrapper) {
       window.speechSynthesis.cancel();
     }
   });
+
+  function toggleServerRecording() {
+    if (!navigator.mediaDevices || !window.MediaRecorder) {
+      frappe.show_alert({
+        message: __("Audio recording is not supported in this browser."),
+        indicator: "orange",
+      });
+      return;
+    }
+
+    if (state.mediaRecorder && state.mediaRecorder.state === "recording") {
+      state.mediaRecorder.stop();
+      return;
+    }
+
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+      state.audioChunks = [];
+      state.mediaRecorder = new MediaRecorder(stream);
+
+      state.mediaRecorder.ondataavailable = function (event) {
+        if (event.data && event.data.size) {
+          state.audioChunks.push(event.data);
+        }
+      };
+
+      state.mediaRecorder.onstop = function () {
+        stream.getTracks().forEach(function (track) {
+          track.stop();
+        });
+        state.listening = false;
+        $mic.removeClass("active");
+        transcribeServerAudio();
+      };
+
+      state.mediaRecorder.start();
+      state.listening = true;
+      $mic.addClass("active");
+      frappe.show_alert({
+        message: __("Listening. Tap the mic again to stop."),
+        indicator: "blue",
+      });
+    }).catch(function () {
+      frappe.show_alert({
+        message: __("Microphone permission was not granted."),
+        indicator: "red",
+      });
+    });
+  }
+
+  function transcribeServerAudio() {
+    if (!state.audioChunks.length) {
+      return;
+    }
+
+    const audioBlob = new Blob(state.audioChunks, { type: "audio/webm" });
+    const formData = new FormData();
+    formData.append("audio", audioBlob, "voice.webm");
+    setLoading(true);
+
+    fetch("/api/method/nexova_ai.api.transcribe_audio", {
+      method: "POST",
+      body: formData,
+      headers: {
+        "X-Frappe-CSRF-Token": frappe.csrf_token,
+      },
+    }).then(function (response) {
+      return response.json();
+    }).then(function (response) {
+      const message = response.message || {};
+      const transcript = (message.transcript || "").trim();
+      if (!transcript) {
+        addMessage("assistant", __("I could not hear a clear command. Please try again."));
+        return;
+      }
+      $input.val(transcript).focus();
+      frappe.show_alert({
+        message: __("Transcript ready. Review it, then tap Ask."),
+        indicator: "blue",
+      });
+    }).catch(function () {
+      addMessage("assistant", __("Voice transcription failed. Please try again or type your question."));
+    }).finally(function () {
+      setLoading(false);
+    });
+  }
 
   function askQuestion(rawQuestion) {
     const question = (rawQuestion || "").trim();
@@ -211,6 +304,11 @@ frappe.pages["nexova-ai-assistant"].on_page_load = function (wrapper) {
       return;
     }
 
+    if (state.supportsServerStt) {
+      $mic.prop("disabled", false).attr("title", __("Record voice command"));
+      return;
+    }
+
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
@@ -281,6 +379,7 @@ frappe.pages["nexova-ai-assistant"].on_page_load = function (wrapper) {
         state.recognitionLanguage = config.voice && config.voice.recognition_language
           ? config.voice.recognition_language
           : null;
+        state.supportsServerStt = Boolean(config.voice && config.voice.supports_server_stt);
 
         if (!state.voiceEnabled) {
           $mic.prop("disabled", true).attr("title", __("Voice input is disabled for this site."));
@@ -290,6 +389,9 @@ frappe.pages["nexova-ai-assistant"].on_page_load = function (wrapper) {
         }
       },
       always() {
+        if (state.supportsServerStt) {
+          $mic.prop("disabled", false).attr("title", __("Record voice command"));
+        }
         if (typeof done === "function") {
           done();
         }

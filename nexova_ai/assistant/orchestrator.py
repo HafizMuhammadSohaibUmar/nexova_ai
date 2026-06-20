@@ -9,7 +9,7 @@ from nexova_ai.assistant.audit import log_request
 from nexova_ai.assistant.contracts import AssistantResult, response
 from nexova_ai.assistant.dynamic_tools import answer_dynamic_query, can_try_dynamic_query
 from nexova_ai.assistant.intent import detect_intent, detect_language, normalize_text
-from nexova_ai.assistant.llm import suggest_intent
+from nexova_ai.assistant.llm import suggest_intent_with_llm
 from nexova_ai.assistant.navigation import resolve_navigation
 from nexova_ai.assistant.permissions import has_required_role
 from nexova_ai.assistant.rag import answer_knowledge_question
@@ -99,7 +99,12 @@ def _handle_question(clean_question: str, normalized: str, settings) -> Assistan
 
     intent = detect_intent(clean_question)
     if intent == "unknown":
-        suggestion = suggest_intent(clean_question, settings.llm_provider)
+        suggestion = suggest_intent_with_llm(
+            question=clean_question,
+            provider=settings.llm_provider,
+            endpoint=settings.local_llm_endpoint,
+            model=settings.local_llm_model,
+        )
         if suggestion:
             intent = suggestion.intent
 

@@ -156,6 +156,7 @@ class AppStructureTest(unittest.TestCase):
             "rag_provider",
             "local_stt_endpoint",
             "local_llm_endpoint",
+            "local_llm_model",
             "cloud_stt_provider",
             "cloud_llm_provider",
         ):
@@ -166,6 +167,7 @@ class AppStructureTest(unittest.TestCase):
         self.assertIn("Local Whisper", fields["stt_provider"]["options"])
         self.assertIn("Cloud Deepgram", fields["stt_provider"]["options"])
         self.assertIn("Local Ollama", fields["llm_provider"]["options"])
+        self.assertEqual(fields["local_llm_model"]["default"], "qwen3:14b")
         self.assertIn("Local", fields["rag_provider"]["options"])
 
     def test_api_uses_settings_and_audit_log(self) -> None:
@@ -201,6 +203,7 @@ class AppStructureTest(unittest.TestCase):
             "rag.py",
             "knowledge.py",
             "voice.py",
+            "stt.py",
             "llm.py",
             "retention.py",
             "orchestrator.py",
@@ -321,6 +324,11 @@ class AppStructureTest(unittest.TestCase):
 
         self.assertIn("TOOL_REGISTRY", llm)
         self.assertIn("suggest_intent", orchestrator)
+        self.assertIn("suggest_intent_with_llm", orchestrator)
+        self.assertIn("parse_intent_response", llm)
+        self.assertIn('provider != "Local Ollama"', llm)
+        self.assertIn("intent not in TOOL_REGISTRY", llm)
+        self.assertIn('"format": "json"', llm)
         self.assertIn('provider in {"Disabled", "Deterministic"}', llm)
 
     def test_urdu_and_roman_urdu_core_phrases_exist(self) -> None:
@@ -359,11 +367,25 @@ class AppStructureTest(unittest.TestCase):
 
         self.assertIn("recognition_language", api)
         self.assertIn("supports_server_stt", api)
+        self.assertIn("transcribe_audio", api)
         self.assertIn("recognition_language", voice)
         self.assertIn("Local Whisper", voice)
         self.assertIn("Cloud Deepgram", voice)
+        self.assertIn("MediaRecorder", script)
+        self.assertIn("nexova_ai.api.transcribe_audio", script)
+        self.assertIn("FormData", script)
         self.assertIn("maxAlternatives = 5", script)
         self.assertIn("state.recognitionLanguage", script)
+
+    def test_server_stt_connector_uses_local_whisper_safely(self) -> None:
+        stt = (ASSISTANT / "stt.py").read_text(encoding="utf-8")
+
+        self.assertIn("transcribe_audio_bytes", stt)
+        self.assertIn("MAX_AUDIO_BYTES", stt)
+        self.assertIn('stt_provider != "Local Whisper"', stt)
+        self.assertIn('endpoint.rstrip("/") + "/inference"', stt)
+        self.assertIn("multipart/form-data", stt)
+        self.assertIn("Do not store", (ASSISTANT / "voice.py").read_text(encoding="utf-8"))
 
     def test_cloud_and_local_deployment_modes_documented(self) -> None:
         guide = ROOT / "docs" / "CLOUD_AND_LOCAL_DEPLOYMENT_MODES.md"

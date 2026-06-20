@@ -45,6 +45,7 @@
     "local_services_section",
     "local_stt_endpoint",
     "local_llm_endpoint",
+    "local_llm_model",
     "local_rag_endpoint",
     "cloud_services_section",
     "cloud_stt_provider",
@@ -303,6 +304,13 @@
       "fieldname": "local_llm_endpoint",
       "fieldtype": "Data",
       "label": "Local LLM Endpoint"
+    },
+    {
+      "default": "qwen3:14b",
+      "description": "Local Ollama model used for strict intent routing.",
+      "fieldname": "local_llm_model",
+      "fieldtype": "Data",
+      "label": "Local LLM Model"
     },
     {
       "default": "local",
