@@ -49,6 +49,33 @@ class ProductionControlsTest(unittest.TestCase):
         self.assertTrue(evaluate_subscription("Suspended", enforcement_enabled=False).allowed)
         self.assertFalse(evaluate_subscription("Unexpected").allowed)
 
+    def test_license_decision_keeps_suspended_sites_readable(self) -> None:
+        from nexova_ai.assistant.license import evaluate_license
+
+        active = evaluate_license(
+            subscription_status="Active",
+            license_mode="Online Subscription",
+        )
+        self.assertTrue(active.ai_enabled)
+        self.assertFalse(active.erp_read_only)
+
+        suspended = evaluate_license(
+            subscription_status="Suspended",
+            license_mode="Signed Offline License",
+        )
+        self.assertFalse(suspended.ai_enabled)
+        self.assertTrue(suspended.erp_read_only)
+        self.assertTrue(suspended.allow_login)
+        self.assertTrue(suspended.allow_read)
+        self.assertTrue(suspended.allow_backup_export)
+
+        disabled = evaluate_license(
+            subscription_status="Suspended",
+            license_mode="Disabled",
+        )
+        self.assertTrue(disabled.ai_enabled)
+        self.assertFalse(disabled.erp_read_only)
+
     def test_rate_limit_allows_until_configured_minute_limit(self) -> None:
         cache = FakeCache()
         _install_fake_frappe(cache)

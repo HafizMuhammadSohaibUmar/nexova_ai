@@ -15,6 +15,7 @@
     "live_data_enabled",
     "voice_enabled",
     "rag_enabled",
+    "safe_actions_enabled",
     "subscription_enforcement_enabled",
     "language_section",
     "language_mode",
@@ -114,6 +115,13 @@
       "fieldname": "rag_enabled",
       "fieldtype": "Check",
       "label": "RAG Enabled"
+    },
+    {
+      "default": "0",
+      "description": "Allows the assistant to prepare create/update drafts only. Actual writes still require a separate explicit confirmation flow.",
+      "fieldname": "safe_actions_enabled",
+      "fieldtype": "Check",
+      "label": "Safe Action Drafts Enabled"
     },
     {
       "default": "1",

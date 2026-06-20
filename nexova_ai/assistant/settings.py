@@ -16,6 +16,7 @@ class AssistantSettings:
     live_data_enabled: bool = True
     voice_enabled: bool = True
     rag_enabled: bool = False
+    safe_actions_enabled: bool = False
     subscription_enforcement_enabled: bool = True
     subscription_status: str = "Active"
     language_mode: str = "English and Urdu"
@@ -59,6 +60,7 @@ def get_settings() -> AssistantSettings:
         live_data_enabled=_enabled(getattr(doc, "live_data_enabled", 1)),
         voice_enabled=_enabled(getattr(doc, "voice_enabled", 1)),
         rag_enabled=bool(getattr(doc, "rag_enabled", 0)),
+        safe_actions_enabled=bool(getattr(doc, "safe_actions_enabled", 0)),
         subscription_enforcement_enabled=_enabled(
             getattr(doc, "subscription_enforcement_enabled", 1)
         ),

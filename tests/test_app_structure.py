@@ -188,6 +188,12 @@ class AppStructureTest(unittest.TestCase):
             "registry.py",
             "discovery.py",
             "dynamic_tools.py",
+            "metadata.py",
+            "query_engine.py",
+            "actions.py",
+            "license.py",
+            "read_only.py",
+            "providers.py",
             "tools.py",
             "navigation.py",
             "rag.py",
@@ -294,6 +300,8 @@ class AppStructureTest(unittest.TestCase):
         self.assertIn("safe_list_fields", discovery)
         self.assertIn("fuzzy_match_score", discovery)
         self.assertIn("answer_dynamic_query", dynamic_tools)
+        self.assertIn("plan_dynamic_query", dynamic_tools)
+        self.assertIn("execute_query_plan", dynamic_tools)
         self.assertIn("dynamic_doctype_list", dynamic_tools)
         self.assertIn("dynamic_doctype_count", dynamic_tools)
         self.assertIn("find_navigation_routes", navigation)
@@ -364,6 +372,93 @@ class AppStructureTest(unittest.TestCase):
         self.assertIn("Local Whisper", source)
         self.assertIn("Local Ollama", source)
         self.assertIn("Signed Offline License", source)
+
+    def test_metadata_engine_foundation_exists(self) -> None:
+        source = (ASSISTANT / "metadata.py").read_text(encoding="utf-8")
+
+        self.assertIn("class DocTypeSummary", source)
+        self.assertIn("class FieldSummary", source)
+        self.assertIn("get_doctype_summary", source)
+        self.assertIn("find_doctype_by_phrase", source)
+        self.assertIn("required_fields", source)
+        self.assertIn("link_fields", source)
+        self.assertIn("table_fields", source)
+        self.assertIn("safe_filter_fields", source)
+        self.assertIn("frappe.get_meta", source)
+        self.assertIn("frappe.has_permission", source)
+
+    def test_dynamic_query_engine_uses_metadata_and_safe_operations(self) -> None:
+        source = (ASSISTANT / "query_engine.py").read_text(encoding="utf-8")
+
+        self.assertIn("class QueryPlan", source)
+        self.assertIn("plan_dynamic_query", source)
+        self.assertIn("execute_query_plan", source)
+        self.assertIn('operation="count"', source)
+        self.assertIn('operation="sum"', source)
+        self.assertIn('operation="list"', source)
+        self.assertIn("safe_numeric_fields", source)
+        self.assertIn("frappe.get_list", source)
+        self.assertNotIn("frappe.db.sql", source)
+
+    def test_safe_crud_draft_requires_confirmation_and_disables_execution(self) -> None:
+        source = (ASSISTANT / "actions.py").read_text(encoding="utf-8")
+
+        self.assertIn("class ActionDraft", source)
+        self.assertIn("build_create_draft", source)
+        self.assertIn("preview_create_action", source)
+        self.assertIn("requires_confirmation: bool = True", source)
+        self.assertIn("execution_enabled: bool = False", source)
+        self.assertIn("Confirmed write execution is not enabled yet", source)
+        self.assertNotIn(".insert(", source)
+        self.assertNotIn(".save(", source)
+
+    def test_license_and_read_only_foundation_exists(self) -> None:
+        license_source = (ASSISTANT / "license.py").read_text(encoding="utf-8")
+        read_only_source = (ASSISTANT / "read_only.py").read_text(encoding="utf-8")
+
+        self.assertIn("class LicenseDecision", license_source)
+        self.assertIn("evaluate_license", license_source)
+        self.assertIn("Signed Offline License", license_source)
+        self.assertIn("erp_read_only=True", license_source)
+        self.assertIn("allow_backup_export=True", license_source)
+        self.assertIn("is_write_allowed", read_only_source)
+        self.assertIn("WRITE_OPERATIONS", read_only_source)
+
+    def test_provider_contracts_cover_local_and_cloud_options(self) -> None:
+        source = (ASSISTANT / "providers.py").read_text(encoding="utf-8")
+
+        self.assertIn("class ProviderCapability", source)
+        self.assertIn("Local Whisper", source)
+        self.assertIn("Local Vosk", source)
+        self.assertIn("Cloud Deepgram", source)
+        self.assertIn("Local Ollama", source)
+        self.assertIn("Cloud Mistral", source)
+        self.assertIn("sends_client_data_to_cloud", source)
+
+    def test_safe_actions_setting_is_present_but_disabled_by_default(self) -> None:
+        settings = DOCTYPE / "nexova_ai_settings" / "nexova_ai_settings.json"
+        settings_doc = json.loads(settings.read_text(encoding="utf-8"))
+        fields = {field["fieldname"]: field for field in settings_doc["fields"]}
+
+        self.assertIn("safe_actions_enabled", fields)
+        self.assertEqual(fields["safe_actions_enabled"]["default"], "0")
+        self.assertIn("safe_actions_enabled", (ASSISTANT / "settings.py").read_text(encoding="utf-8"))
+
+    def test_commercial_platform_plan_documents_remaining_work(self) -> None:
+        source = (ROOT / "docs" / "COMMERCIAL_PLATFORM_IMPLEMENTATION_PLAN.md").read_text(
+            encoding="utf-8"
+        )
+
+        for phrase in (
+            "LLM intent router",
+            "Safe CRUD workflow",
+            "Voice upgrade",
+            "Local/offline package",
+            "Cloud package",
+            "Subscription enforcement",
+            "Not Yet Client Ready",
+        ):
+            self.assertIn(phrase, source)
 
 
 if __name__ == "__main__":

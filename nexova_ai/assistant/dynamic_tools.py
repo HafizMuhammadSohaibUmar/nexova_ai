@@ -7,6 +7,7 @@ import frappe
 from nexova_ai.assistant.contracts import response
 from nexova_ai.assistant.discovery import find_readable_doctype, safe_list_fields
 from nexova_ai.assistant.intent import normalize_text
+from nexova_ai.assistant.query_engine import execute_query_plan, plan_dynamic_query
 from nexova_ai.assistant.settings import get_settings
 from nexova_ai.assistant.vocabulary import contains_any_phrase
 
@@ -18,6 +19,10 @@ def can_try_dynamic_query(question: str) -> bool:
 
 
 def answer_dynamic_query(question: str):
+    query_plan = plan_dynamic_query(question)
+    if query_plan:
+        return execute_query_plan(query_plan)
+
     doctype = find_readable_doctype(question)
     if not doctype:
         return None
