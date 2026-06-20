@@ -488,8 +488,8 @@ class AppStructureTest(unittest.TestCase):
         self.assertNotIn("0.0.0.0", compose)
         self.assertIn("127.0.0.1:${OLLAMA_PORT:-11434}:11434", local_ports)
         self.assertIn("127.0.0.1:${WHISPER_PORT:-9000}:9000", local_ports)
-        self.assertIn("qwen2.5:7b", env)
-        self.assertIn("WHISPER_MODEL=small", env)
+        self.assertIn("qwen3:14b", env)
+        self.assertIn("WHISPER_MODEL=large-v3-turbo-q5_0", env)
 
     def test_whisper_container_builds_from_source_and_downloads_model(self) -> None:
         dockerfile = (DEPLOY_AI / "whisper-cpp" / "Dockerfile").read_text(encoding="utf-8")
@@ -511,7 +511,7 @@ class AppStructureTest(unittest.TestCase):
         for phrase in (
             "Cloud Hosted Mode",
             "Local Offline Mode",
-            "qwen2.5:7b",
+            "qwen3:14b",
             "whisper.cpp",
             "Never expose port `11434`",
             "Never expose port `9000`",

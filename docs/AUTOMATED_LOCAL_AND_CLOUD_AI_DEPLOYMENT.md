@@ -5,9 +5,9 @@ Invoxia AI should not require manual installation of Whisper, Ollama, or Qwen fo
 ## What Gets Installed Automatically
 
 - Ollama runtime.
-- Configured Qwen model, default `qwen2.5:7b`.
+- Configured Qwen model, default `qwen3:14b`.
 - whisper.cpp server.
-- Configured Whisper model, default `small`.
+- Configured Whisper model, default `large-v3-turbo-q5_0`.
 - Private Docker volumes for model storage.
 
 ## Cloud Hosted Mode
@@ -59,30 +59,25 @@ sh deploy/ai/install-local-ai-services.sh
 
 ## Model Selection
 
-Use low-resource defaults first:
+Use the Invoxia standard profile first:
 
 ```text
-OLLAMA_MODEL=qwen2.5:7b
-WHISPER_MODEL=small
+OLLAMA_MODEL=qwen3:14b
+WHISPER_MODEL=large-v3-turbo-q5_0
 ```
 
 For weak machines:
 
 ```text
-OLLAMA_MODEL=qwen2.5:3b
+OLLAMA_MODEL=qwen3:4b
 WHISPER_MODEL=base
 ```
 
-For stronger Urdu/English speech recognition:
+For premium GPU-backed installs:
 
 ```text
+OLLAMA_MODEL=qwen3:30b
 WHISPER_MODEL=large-v3-turbo
-```
-
-For stronger local language understanding:
-
-```text
-OLLAMA_MODEL=qwen3:8b
 ```
 
 ## Security Rules
