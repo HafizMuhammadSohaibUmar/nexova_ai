@@ -19,6 +19,7 @@ class AssistantSettings:
     safe_actions_enabled: bool = False
     subscription_enforcement_enabled: bool = True
     subscription_status: str = "Active"
+    subscription_grace_period_days: int = 7
     language_mode: str = "English and Urdu"
     llm_provider: str = "Deterministic"
     rag_provider: str = "Disabled"
@@ -65,6 +66,10 @@ def get_settings() -> AssistantSettings:
             getattr(doc, "subscription_enforcement_enabled", 1)
         ),
         subscription_status=doc.subscription_status or "Active",
+        subscription_grace_period_days=_positive_int(
+            getattr(doc, "subscription_grace_period_days", 7),
+            7,
+        ),
         language_mode=getattr(doc, "language_mode", None) or "English and Urdu",
         llm_provider=doc.llm_provider or "Deterministic",
         rag_provider=getattr(doc, "rag_provider", None) or "Disabled",

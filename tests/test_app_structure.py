@@ -139,6 +139,7 @@ class AppStructureTest(unittest.TestCase):
             "max_tool_rows",
             "max_dynamic_rows",
             "max_response_characters",
+            "subscription_grace_period_days",
         ):
             self.assertIn(fieldname, fieldnames)
 
@@ -445,6 +446,18 @@ class AppStructureTest(unittest.TestCase):
         self.assertEqual(fields["safe_actions_enabled"]["default"], "0")
         self.assertIn("safe_actions_enabled", (ASSISTANT / "settings.py").read_text(encoding="utf-8"))
 
+    def test_subscription_grace_period_is_seven_days_by_default(self) -> None:
+        settings = DOCTYPE / "nexova_ai_settings" / "nexova_ai_settings.json"
+        settings_doc = json.loads(settings.read_text(encoding="utf-8"))
+        fields = {field["fieldname"]: field for field in settings_doc["fields"]}
+
+        self.assertIn("subscription_grace_period_days", fields)
+        self.assertEqual(fields["subscription_grace_period_days"]["default"], "7")
+        self.assertIn(
+            "subscription_grace_period_days",
+            (ASSISTANT / "settings.py").read_text(encoding="utf-8"),
+        )
+
     def test_commercial_platform_plan_documents_remaining_work(self) -> None:
         source = (ROOT / "docs" / "COMMERCIAL_PLATFORM_IMPLEMENTATION_PLAN.md").read_text(
             encoding="utf-8"
@@ -458,6 +471,25 @@ class AppStructureTest(unittest.TestCase):
             "Cloud package",
             "Subscription enforcement",
             "Not Yet Client Ready",
+            "Seven-day subscription grace period",
+        ):
+            self.assertIn(phrase, source)
+
+    def test_remaining_development_plan_tracks_full_product_gaps(self) -> None:
+        source = (ROOT / "docs" / "REMAINING_DEVELOPMENT_PLAN.md").read_text(
+            encoding="utf-8"
+        )
+
+        for phrase in (
+            "Whisper runtime connector",
+            "Ollama/Qwen strict intent router",
+            "Safe CRUD workflow",
+            "Full ERPNext coverage",
+            "Urdu/English quality",
+            "Subscription and licensing",
+            "Backup and restore",
+            "Monitoring and support",
+            "seven-day grace period",
         ):
             self.assertIn(phrase, source)
 

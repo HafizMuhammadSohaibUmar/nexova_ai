@@ -17,6 +17,7 @@ def is_write_allowed(doctype: str, operation: str) -> tuple[bool, str]:
         subscription_status=settings.subscription_status,
         license_mode=settings.license_mode,
         enforcement_enabled=settings.subscription_enforcement_enabled,
+        grace_period_days=settings.subscription_grace_period_days,
     )
 
     if operation not in WRITE_OPERATIONS:

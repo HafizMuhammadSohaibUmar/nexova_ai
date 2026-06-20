@@ -39,6 +39,15 @@ class ProductionControlsTest(unittest.TestCase):
         past_due = evaluate_subscription("Past Due")
         self.assertTrue(past_due.allowed)
         self.assertTrue(past_due.warn_only)
+        self.assertEqual(past_due.grace_period_days, 7)
+        self.assertIn("7 day", past_due.message)
+
+        in_grace = evaluate_subscription("Past Due", grace_period_days=7, days_past_due=7)
+        self.assertTrue(in_grace.allowed)
+
+        after_grace = evaluate_subscription("Past Due", grace_period_days=7, days_past_due=8)
+        self.assertFalse(after_grace.allowed)
+        self.assertIn("grace period has ended", after_grace.message)
 
         for status in ("Suspended", "Disabled", "Terminated Pending Retention"):
             with self.subTest(status=status):
@@ -75,6 +84,16 @@ class ProductionControlsTest(unittest.TestCase):
         )
         self.assertTrue(disabled.ai_enabled)
         self.assertFalse(disabled.erp_read_only)
+
+        expired_grace = evaluate_license(
+            subscription_status="Past Due",
+            license_mode="Online Subscription",
+            grace_period_days=7,
+            days_past_due=8,
+        )
+        self.assertFalse(expired_grace.ai_enabled)
+        self.assertTrue(expired_grace.erp_read_only)
+        self.assertTrue(expired_grace.allow_backup_export)
 
     def test_rate_limit_allows_until_configured_minute_limit(self) -> None:
         cache = FakeCache()

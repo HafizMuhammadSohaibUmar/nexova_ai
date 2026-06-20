@@ -49,7 +49,8 @@
     "cloud_services_section",
     "cloud_stt_provider",
     "cloud_llm_provider",
-    "subscription_status"
+    "subscription_status",
+    "subscription_grace_period_days"
   ],
   "fields": [
     {
@@ -337,6 +338,13 @@
       "fieldtype": "Select",
       "label": "Subscription Status",
       "options": "Active\nPast Due\nSuspended\nDisabled\nTerminated Pending Retention"
+    },
+    {
+      "default": "7",
+      "description": "Number of days a past-due client may continue using Invoxia AI before assistant access is blocked. Keep this at 7 for commercial plans.",
+      "fieldname": "subscription_grace_period_days",
+      "fieldtype": "Int",
+      "label": "Subscription Grace Period Days"
     }
   ],
   "index_web_pages_for_search": 0,

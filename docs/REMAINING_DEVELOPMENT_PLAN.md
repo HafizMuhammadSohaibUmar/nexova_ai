@@ -923,3 +923,87 @@ Recommended next sprint scope:
 6. Add deployment release checklist updates for tags and staging.
 
 This sprint keeps the product moving toward production readiness before adding more flashy assistant abilities.
+# Remaining Work To Reach The Full Invoxia AI Product
+
+This file tracks what remains before Invoxia AI is ready for paid clients across both hosted cloud and local/offline installs.
+
+## Already In Place
+
+- Custom Frappe app only. ERPNext and Frappe core remain untouched.
+- Invoxia AI Desk Page and Workspace.
+- Permission-aware live data tools for core ERPNext areas.
+- Dynamic navigation discovery for DocTypes, reports, dashboards, workspaces, pages, and modules.
+- Metadata engine foundation for DocTypes, fields, child tables, links, permissions, and safe query fields.
+- Query planner foundation for bounded read-only list/count/sum operations.
+- Safe CRUD draft foundation, with actual write execution still disabled.
+- Browser voice foundation and provider settings.
+- Local/cloud AI deployment automation for Ollama/Qwen and whisper.cpp.
+- Standard model profile: `qwen3:14b` and `large-v3-turbo-q5_0`.
+- Audit logs, tool execution logs, retention settings, rate limits, and subscription status settings.
+- Seven-day subscription grace period setting and backend policy foundation.
+
+## Remaining Before Client Production
+
+1. Whisper runtime connector
+   - Upload audio from the Desk Page to Frappe.
+   - Forward audio to whisper.cpp.
+   - Return transcript.
+   - Do not store raw audio by default.
+
+2. Ollama/Qwen strict intent router
+   - Send user text to Qwen.
+   - Require strict JSON output.
+   - Validate intent against approved registry only.
+   - Reject unknown tools and unsafe arguments.
+   - Ask clarification when confidence is low.
+
+3. Safe CRUD workflow
+   - Add draft action DocType.
+   - Render preview in UI.
+   - Require explicit user confirmation.
+   - Recheck permissions immediately before write.
+   - Log before and after every write.
+   - Start with create-only, then update, then submit/cancel later.
+
+4. Full ERPNext coverage
+   - Expand dynamic metadata-driven actions across all installed modules.
+   - Add report filters and dashboard opening.
+   - Add specific document opening by human names and latest/last record requests.
+   - Add ambiguity handling instead of guessing.
+
+5. Urdu/English quality
+   - Test English, Roman Urdu, and Urdu script command sets.
+   - Add phrase aliases from real client usage.
+   - Add transcript correction prompts.
+   - Add noisy microphone guidance.
+
+6. Subscription and licensing
+   - Build central license server for hosted clients.
+   - Build signed offline license files for local clients.
+   - Store `past_due_since`.
+   - Enforce seven-day grace period after billing failure.
+   - Put local expired clients into read-only ERP mode while preserving login and backup export.
+
+7. Backup and restore
+   - Automated daily backups.
+   - Encrypted offsite backup for hosted clients.
+   - Local backup folder and optional external drive backup for offline clients.
+   - Monthly restore drill.
+   - Written recovery runbook.
+
+8. Monitoring and support
+   - Health checks for ERPNext, MariaDB, Redis, Ollama, and Whisper.
+   - Error log reporting.
+   - Disk and backup alerts.
+   - Release tags and rollback notes.
+
+9. Installer and deployment polish
+   - Cloud deployment script for one client site.
+   - Local installer flow for Docker-based offline clients.
+   - Model profile selection: economy, standard, premium.
+   - HTTPS setup for hosted and LAN/local installs.
+
+10. Production validation
+   - Seeded ERPNext test site.
+   - Integration tests for navigation, live answers, STT, LLM routing, safe CRUD previews, rate limits, and suspension.
+   - Security review for every tool that can read or write business data.

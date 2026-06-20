@@ -64,6 +64,7 @@ def _handle_question(clean_question: str, normalized: str, settings) -> Assistan
     subscription = evaluate_subscription(
         settings.subscription_status,
         settings.subscription_enforcement_enabled,
+        grace_period_days=settings.subscription_grace_period_days,
     )
     if not subscription.allowed:
         return response(

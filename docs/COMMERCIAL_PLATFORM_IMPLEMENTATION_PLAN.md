@@ -15,6 +15,7 @@ This app must remain a custom Frappe app installed beside ERPNext. It must not m
 - Query planner foundation for safe list/count/sum operations using metadata.
 - Safe CRUD draft foundation. It can prepare previews, but confirmed write execution is intentionally disabled until the confirmation workflow is complete.
 - License decision foundation for active, past-due, suspended, disabled, and offline-license scenarios.
+- Seven-day subscription grace period policy in settings and backend decision logic.
 
 ## Next Development Milestones
 
@@ -55,6 +56,7 @@ This app must remain a custom Frappe app installed beside ERPNext. It must not m
 6. Subscription enforcement
    - Online license server for cloud clients.
    - Signed offline license renewal for local clients.
+   - Store `past_due_since` from the billing/license server and block assistant usage after the seven-day grace period.
    - Read-only ERP mode for suspended local installs while keeping login, read access, and backup export available.
 
 7. Testing and release readiness

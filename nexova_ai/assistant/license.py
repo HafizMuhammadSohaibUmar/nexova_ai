@@ -20,9 +20,12 @@ def evaluate_license(
     license_mode: str | None,
     enforcement_enabled: bool = True,
     offline_days_remaining: int | None = None,
+    grace_period_days: int = 7,
+    days_past_due: int | None = None,
 ) -> LicenseDecision:
     status = subscription_status or "Active"
     mode = license_mode or "Online Subscription"
+    grace_days = max(0, int(grace_period_days or 0))
 
     if not enforcement_enabled or mode == "Disabled":
         return LicenseDecision(status=status, ai_enabled=True, erp_read_only=False)
@@ -31,11 +34,20 @@ def evaluate_license(
         return LicenseDecision(status=status, ai_enabled=True, erp_read_only=False)
 
     if status == "Past Due":
+        if days_past_due is not None and days_past_due > grace_days:
+            return LicenseDecision(
+                status=status,
+                ai_enabled=False,
+                erp_read_only=True,
+                allow_backup_export=True,
+                message="Subscription grace period has ended. ERP should remain readable and backup export should remain available.",
+            )
+
         return LicenseDecision(
             status=status,
             ai_enabled=True,
             erp_read_only=False,
-            message="Subscription is past due. Keep backups current and resolve billing before grace ends.",
+            message=f"Subscription is past due. Keep backups current and resolve billing within {grace_days} day(s).",
         )
 
     if mode == "Signed Offline License" and offline_days_remaining is not None:
