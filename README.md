@@ -4,6 +4,13 @@ Custom Frappe app for ERPNext. The package name remains `nexova_ai`, while the u
 
 This repository contains source files only. It does not modify ERPNext core, Docker files, or any existing ERPNext setup.
 
+Invoxia AI is designed to support two production deployment models from the same custom app:
+
+- **Cloud Hosted** for managed access, backups, monitoring, and online subscription control.
+- **Local Offline** for privacy-sensitive clients using local STT, local LLM, local RAG, and signed offline licensing.
+
+See `docs/CLOUD_AND_LOCAL_DEPLOYMENT_MODES.md` for the provider and deployment policy.
+
 ## Production V1 Foundation
 
 - Workspace: **Invoxia AI**

@@ -24,7 +24,7 @@ def get_voice_strategy(
         stt_provider=stt_provider,
         tts_provider=tts_provider,
         recognition_language=_recognition_language(language_mode, stt_provider),
-        supports_server_stt=stt_provider in {"Cloud", "Local"},
+        supports_server_stt=_supports_server_stt(stt_provider),
     )
 
 
@@ -36,3 +36,15 @@ def _recognition_language(language_mode: str, stt_provider: str) -> str:
         return "ur-PK"
 
     return "en-PK"
+
+
+def _supports_server_stt(stt_provider: str) -> bool:
+    return stt_provider in {
+        "Cloud",
+        "Local",
+        "Local Whisper",
+        "Local Vosk",
+        "Cloud Deepgram",
+        "Cloud OpenAI",
+        "Cloud Google",
+    }

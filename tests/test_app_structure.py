@@ -141,6 +141,31 @@ class AppStructureTest(unittest.TestCase):
         ):
             self.assertIn(fieldname, fieldnames)
 
+    def test_settings_contains_cloud_and_local_provider_fields(self) -> None:
+        settings = DOCTYPE / "nexova_ai_settings" / "nexova_ai_settings.json"
+        settings_doc = json.loads(settings.read_text(encoding="utf-8"))
+        fields = {field["fieldname"]: field for field in settings_doc["fields"]}
+
+        for fieldname in (
+            "deployment_mode",
+            "license_mode",
+            "stt_provider",
+            "llm_provider",
+            "rag_provider",
+            "local_stt_endpoint",
+            "local_llm_endpoint",
+            "cloud_stt_provider",
+            "cloud_llm_provider",
+        ):
+            self.assertIn(fieldname, fields)
+
+        self.assertIn("Local Offline", fields["deployment_mode"]["options"])
+        self.assertIn("Signed Offline License", fields["license_mode"]["options"])
+        self.assertIn("Local Whisper", fields["stt_provider"]["options"])
+        self.assertIn("Cloud Deepgram", fields["stt_provider"]["options"])
+        self.assertIn("Local Ollama", fields["llm_provider"]["options"])
+        self.assertIn("Local", fields["rag_provider"]["options"])
+
     def test_api_uses_settings_and_audit_log(self) -> None:
         settings_source = (ASSISTANT / "settings.py").read_text(encoding="utf-8")
         audit_source = (ASSISTANT / "audit.py").read_text(encoding="utf-8")
@@ -259,8 +284,20 @@ class AppStructureTest(unittest.TestCase):
         self.assertIn("recognition_language", api)
         self.assertIn("supports_server_stt", api)
         self.assertIn("recognition_language", voice)
+        self.assertIn("Local Whisper", voice)
+        self.assertIn("Cloud Deepgram", voice)
         self.assertIn("maxAlternatives = 5", script)
         self.assertIn("state.recognitionLanguage", script)
+
+    def test_cloud_and_local_deployment_modes_documented(self) -> None:
+        guide = ROOT / "docs" / "CLOUD_AND_LOCAL_DEPLOYMENT_MODES.md"
+        source = guide.read_text(encoding="utf-8")
+
+        self.assertIn("Cloud Hosted", source)
+        self.assertIn("Local Offline", source)
+        self.assertIn("Local Whisper", source)
+        self.assertIn("Local Ollama", source)
+        self.assertIn("Signed Offline License", source)
 
 
 if __name__ == "__main__":

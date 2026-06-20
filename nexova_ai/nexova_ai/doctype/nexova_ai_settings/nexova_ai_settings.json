@@ -7,6 +7,9 @@
   "field_order": [
     "enabled",
     "required_role",
+    "deployment_section",
+    "deployment_mode",
+    "license_mode",
     "feature_flags_section",
     "navigation_enabled",
     "live_data_enabled",
@@ -37,6 +40,14 @@
     "tool_log_retention_days",
     "provider_section",
     "llm_provider",
+    "rag_provider",
+    "local_services_section",
+    "local_stt_endpoint",
+    "local_llm_endpoint",
+    "local_rag_endpoint",
+    "cloud_services_section",
+    "cloud_stt_provider",
+    "cloud_llm_provider",
     "subscription_status"
   ],
   "fields": [
@@ -53,6 +64,27 @@
       "label": "Required Role",
       "options": "Role",
       "reqd": 1
+    },
+    {
+      "fieldname": "deployment_section",
+      "fieldtype": "Section Break",
+      "label": "Deployment"
+    },
+    {
+      "default": "Cloud Hosted",
+      "description": "Controls privacy and provider expectations. Local Offline should use local STT, local LLM, local RAG, and signed offline licensing.",
+      "fieldname": "deployment_mode",
+      "fieldtype": "Select",
+      "label": "Deployment Mode",
+      "options": "Cloud Hosted\nLocal Offline\nHybrid"
+    },
+    {
+      "default": "Online Subscription",
+      "description": "Cloud sites should use online subscription checks. Local offline sites should use signed offline licenses.",
+      "fieldname": "license_mode",
+      "fieldtype": "Select",
+      "label": "License Mode",
+      "options": "Online Subscription\nSigned Offline License\nDisabled"
     },
     {
       "fieldname": "feature_flags_section",
@@ -118,7 +150,7 @@
       "fieldname": "stt_provider",
       "fieldtype": "Select",
       "label": "Speech To Text Provider",
-      "options": "Browser\nCloud\nLocal\nDisabled"
+      "options": "Browser\nLocal Whisper\nLocal Vosk\nCloud Deepgram\nCloud OpenAI\nCloud Google\nDisabled"
     },
     {
       "default": "Browser",
@@ -234,7 +266,62 @@
       "fieldname": "llm_provider",
       "fieldtype": "Select",
       "label": "LLM Provider",
-      "options": "Deterministic\nMistral\nOpenAI Compatible\nDisabled"
+      "options": "Deterministic\nLocal Ollama\nCloud Mistral\nCloud OpenAI\nOpenAI Compatible\nDisabled"
+    },
+    {
+      "default": "Disabled",
+      "description": "RAG should be used for approved documents, SOPs, policies, and guides, not live ERP financial data.",
+      "fieldname": "rag_provider",
+      "fieldtype": "Select",
+      "label": "RAG Provider",
+      "options": "Disabled\nLocal\nCloud"
+    },
+    {
+      "fieldname": "local_services_section",
+      "fieldtype": "Section Break",
+      "label": "Local Services"
+    },
+    {
+      "default": "http://127.0.0.1:9000",
+      "description": "Local STT service endpoint for local Whisper or Vosk deployments. Keep LAN/private only.",
+      "fieldname": "local_stt_endpoint",
+      "fieldtype": "Data",
+      "label": "Local STT Endpoint"
+    },
+    {
+      "default": "http://127.0.0.1:11434",
+      "description": "Local LLM endpoint, for example Ollama. Keep LAN/private only.",
+      "fieldname": "local_llm_endpoint",
+      "fieldtype": "Data",
+      "label": "Local LLM Endpoint"
+    },
+    {
+      "default": "local",
+      "description": "Local RAG/index endpoint or mode. Store client documents inside the client site/private storage.",
+      "fieldname": "local_rag_endpoint",
+      "fieldtype": "Data",
+      "label": "Local RAG Endpoint"
+    },
+    {
+      "fieldname": "cloud_services_section",
+      "fieldtype": "Section Break",
+      "label": "Cloud Services"
+    },
+    {
+      "default": "Deepgram",
+      "description": "Preferred cloud STT provider for Urdu/English when the client accepts cloud voice processing.",
+      "fieldname": "cloud_stt_provider",
+      "fieldtype": "Select",
+      "label": "Cloud STT Provider",
+      "options": "Deepgram\nOpenAI\nGoogle\nDisabled"
+    },
+    {
+      "default": "Mistral",
+      "description": "Cloud LLM provider for intent routing and response phrasing when the client accepts cloud AI processing.",
+      "fieldname": "cloud_llm_provider",
+      "fieldtype": "Select",
+      "label": "Cloud LLM Provider",
+      "options": "Mistral\nOpenAI\nOpenAI Compatible\nDisabled"
     },
     {
       "default": "Active",

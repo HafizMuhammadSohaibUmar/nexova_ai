@@ -10,6 +10,8 @@ import frappe
 class AssistantSettings:
     enabled: bool = True
     required_role: str = "System Manager"
+    deployment_mode: str = "Cloud Hosted"
+    license_mode: str = "Online Subscription"
     navigation_enabled: bool = True
     live_data_enabled: bool = True
     voice_enabled: bool = True
@@ -18,9 +20,15 @@ class AssistantSettings:
     subscription_status: str = "Active"
     language_mode: str = "English and Urdu"
     llm_provider: str = "Deterministic"
+    rag_provider: str = "Disabled"
     voice_provider: str = "Browser"
     stt_provider: str = "Browser"
     tts_provider: str = "Browser"
+    local_stt_endpoint: str = "http://127.0.0.1:9000"
+    local_llm_endpoint: str = "http://127.0.0.1:11434"
+    local_rag_endpoint: str = "local"
+    cloud_stt_provider: str = "Deepgram"
+    cloud_llm_provider: str = "Mistral"
     log_questions: bool = True
     log_responses: bool = True
     rate_limit_enabled: bool = True
@@ -45,6 +53,8 @@ def get_settings() -> AssistantSettings:
     return AssistantSettings(
         enabled=_enabled(doc.enabled),
         required_role=doc.required_role or "System Manager",
+        deployment_mode=getattr(doc, "deployment_mode", None) or "Cloud Hosted",
+        license_mode=getattr(doc, "license_mode", None) or "Online Subscription",
         navigation_enabled=_enabled(getattr(doc, "navigation_enabled", 1)),
         live_data_enabled=_enabled(getattr(doc, "live_data_enabled", 1)),
         voice_enabled=_enabled(getattr(doc, "voice_enabled", 1)),
@@ -55,9 +65,15 @@ def get_settings() -> AssistantSettings:
         subscription_status=doc.subscription_status or "Active",
         language_mode=getattr(doc, "language_mode", None) or "English and Urdu",
         llm_provider=doc.llm_provider or "Deterministic",
+        rag_provider=getattr(doc, "rag_provider", None) or "Disabled",
         voice_provider=getattr(doc, "voice_provider", None) or "Browser",
         stt_provider=getattr(doc, "stt_provider", None) or "Browser",
         tts_provider=getattr(doc, "tts_provider", None) or "Browser",
+        local_stt_endpoint=getattr(doc, "local_stt_endpoint", None) or "http://127.0.0.1:9000",
+        local_llm_endpoint=getattr(doc, "local_llm_endpoint", None) or "http://127.0.0.1:11434",
+        local_rag_endpoint=getattr(doc, "local_rag_endpoint", None) or "local",
+        cloud_stt_provider=getattr(doc, "cloud_stt_provider", None) or "Deepgram",
+        cloud_llm_provider=getattr(doc, "cloud_llm_provider", None) or "Mistral",
         log_questions=_enabled(doc.log_questions),
         log_responses=_enabled(doc.log_responses),
         rate_limit_enabled=_enabled(getattr(doc, "rate_limit_enabled", 1)),
