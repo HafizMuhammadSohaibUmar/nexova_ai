@@ -1,0 +1,11 @@
+# Optional local-only host bindings for testing from the host machine.
+# Do not use public 0.0.0.0 bindings for these services.
+
+services:
+  ollama:
+    ports:
+      - "127.0.0.1:${OLLAMA_PORT:-11434}:11434"
+
+  whisper:
+    ports:
+      - "127.0.0.1:${WHISPER_PORT:-9000}:9000"

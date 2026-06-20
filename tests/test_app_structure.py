@@ -15,6 +15,7 @@ WORKSPACE = PACKAGE / "workspace" / "nexova_ai" / "nexova_ai.json"
 HOOKS = APP / "hooks.py"
 PATCHES = APP / "patches.txt"
 ASSISTANT = APP / "assistant"
+DEPLOY_AI = ROOT / "deploy" / "ai"
 
 
 def _load_hooks() -> dict[str, object]:
@@ -457,6 +458,64 @@ class AppStructureTest(unittest.TestCase):
             "Cloud package",
             "Subscription enforcement",
             "Not Yet Client Ready",
+        ):
+            self.assertIn(phrase, source)
+
+    def test_ai_service_deployment_automation_exists(self) -> None:
+        for relative_path in (
+            ".env.example",
+            "docker-compose.ai.yml",
+            "docker-compose.ai-local-ports.yml",
+            "install-cloud-ai-services.sh",
+            "install-local-ai-services.sh",
+            "whisper-cpp/Dockerfile",
+            "whisper-cpp/entrypoint.sh",
+        ):
+            self.assertTrue((DEPLOY_AI / relative_path).exists(), relative_path)
+
+    def test_ai_compose_uses_private_services_and_model_bootstrap(self) -> None:
+        compose = (DEPLOY_AI / "docker-compose.ai.yml").read_text(encoding="utf-8")
+        local_ports = (DEPLOY_AI / "docker-compose.ai-local-ports.yml").read_text(
+            encoding="utf-8"
+        )
+        env = (DEPLOY_AI / ".env.example").read_text(encoding="utf-8")
+
+        self.assertIn("ollama/ollama:latest", compose)
+        self.assertIn("ollama pull", compose)
+        self.assertIn("OLLAMA_MODEL", compose)
+        self.assertIn("WHISPER_MODEL", compose)
+        self.assertIn("expose:", compose)
+        self.assertNotIn("0.0.0.0", compose)
+        self.assertIn("127.0.0.1:${OLLAMA_PORT:-11434}:11434", local_ports)
+        self.assertIn("127.0.0.1:${WHISPER_PORT:-9000}:9000", local_ports)
+        self.assertIn("qwen2.5:7b", env)
+        self.assertIn("WHISPER_MODEL=small", env)
+
+    def test_whisper_container_builds_from_source_and_downloads_model(self) -> None:
+        dockerfile = (DEPLOY_AI / "whisper-cpp" / "Dockerfile").read_text(encoding="utf-8")
+        entrypoint = (DEPLOY_AI / "whisper-cpp" / "entrypoint.sh").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("github.com/ggml-org/whisper.cpp", dockerfile)
+        self.assertIn("WHISPER_BUILD_SERVER=ON", dockerfile)
+        self.assertIn("download-ggml-model.sh", entrypoint)
+        self.assertIn("whisper-server", entrypoint)
+        self.assertIn("--host 0.0.0.0", entrypoint)
+
+    def test_automated_ai_deployment_documentation_exists(self) -> None:
+        source = (ROOT / "docs" / "AUTOMATED_LOCAL_AND_CLOUD_AI_DEPLOYMENT.md").read_text(
+            encoding="utf-8"
+        )
+
+        for phrase in (
+            "Cloud Hosted Mode",
+            "Local Offline Mode",
+            "qwen2.5:7b",
+            "whisper.cpp",
+            "Never expose port `11434`",
+            "Never expose port `9000`",
+            "Current App Integration Status",
         ):
             self.assertIn(phrase, source)
 
