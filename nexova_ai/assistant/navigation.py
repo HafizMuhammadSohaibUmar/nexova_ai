@@ -10,7 +10,7 @@ from nexova_ai.assistant.vocabulary import fuzzy_match_score
 NAVIGATION_REGISTRY: tuple[NavigationTarget, ...] = (
     NavigationTarget(
         name="nexova_ai_assistant",
-        label="Nexova AI Assistant",
+        label="Invoxia AI",
         route=("nexova-ai-assistant",),
         category="page",
         required_doctype=None,
@@ -105,7 +105,7 @@ def resolve_navigation(question: str):
             return _navigation_response(dynamic_matches)
 
         return response(
-            "I can navigate to readable ERPNext lists, reports, workspaces, and Nexova AI pages. Please name the area you want to open.",
+            "I can navigate to readable ERPNext lists, reports, workspaces, and Invoxia AI pages. Please name the area you want to open.",
             status="Blocked",
             intent="navigation",
             data={"type": "navigation", "action": "clarify"},

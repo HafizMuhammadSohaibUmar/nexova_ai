@@ -6,10 +6,10 @@ def get_data():
         {
             "module_name": "Nexova AI",
             "category": "Modules",
-            "label": _("Nexova AI"),
-            "color": "blue",
+            "label": _("Invoxia AI"),
+            "color": "black",
             "icon": "octicon octicon-comment-discussion",
             "type": "module",
-            "description": _("AI assistant for ERPNext queries."),
+            "description": _("Privacy-first AI assistant for ERPNext."),
         }
     ]

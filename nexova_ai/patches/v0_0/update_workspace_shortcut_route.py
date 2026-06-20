@@ -13,7 +13,7 @@ def execute() -> None:
     shortcuts = [
         {
             "id": "nexova_ai_assistant_shortcut",
-            "shortcut_name": "Open Nexova AI",
+            "shortcut_name": "Open Invoxia AI",
             "link_to": "nexova-ai-assistant",
             "type": "Page",
             "route": "/app/nexova-ai-assistant",
@@ -22,7 +22,7 @@ def execute() -> None:
         },
         {
             "id": "nexova_ai_settings_shortcut",
-            "shortcut_name": "Nexova AI Settings",
+            "shortcut_name": "Invoxia AI Settings",
             "link_to": "Nexova AI Settings",
             "type": "DocType",
             "route": "/app/nexova-ai-settings",
@@ -31,7 +31,7 @@ def execute() -> None:
         },
         {
             "id": "nexova_ai_audit_shortcut",
-            "shortcut_name": "Nexova AI Audit Log",
+            "shortcut_name": "Invoxia AI Audit Log",
             "link_to": "Nexova AI Audit Log",
             "type": "DocType",
             "route": "/app/nexova-ai-audit-log",
@@ -45,7 +45,7 @@ def execute() -> None:
             "id": "nexova_ai_header",
             "type": "header",
             "data": {
-                "text": '<span class="h4">Nexova AI</span>',
+                "text": '<span class="h4">Invoxia AI</span>',
                 "col": 12,
             },
         }]

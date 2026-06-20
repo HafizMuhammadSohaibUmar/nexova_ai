@@ -32,6 +32,20 @@
   color: var(--text-muted);
 }
 
+.nexova-ai-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.nexova-ai-brand-mark {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  border-radius: 10px;
+}
+
 .nexova-ai-messages {
   flex: 1;
   overflow: auto;
@@ -174,6 +188,10 @@
   .nexova-ai-toolbar {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .nexova-ai-brand {
+    align-items: flex-start;
   }
 
   .nexova-ai-composer {

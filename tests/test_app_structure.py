@@ -56,10 +56,12 @@ class AppStructureTest(unittest.TestCase):
         shortcuts = {block["data"]["shortcut_name"]: block for block in content if block["type"] == "shortcut"}
         self.assertEqual(workspace["name"], "Nexova AI")
         self.assertEqual(workspace["module"], "Nexova AI")
-        self.assertEqual(shortcuts["Open Nexova AI"]["data"]["link_to"], "nexova-ai-assistant")
-        self.assertEqual(shortcuts["Open Nexova AI"]["data"]["route"], "/app/nexova-ai-assistant")
-        self.assertEqual(shortcuts["Nexova AI Settings"]["data"]["link_to"], "Nexova AI Settings")
-        self.assertEqual(shortcuts["Nexova AI Audit Log"]["data"]["link_to"], "Nexova AI Audit Log")
+        self.assertEqual(workspace["label"], "Invoxia AI")
+        self.assertEqual(workspace["title"], "Invoxia AI")
+        self.assertEqual(shortcuts["Open Invoxia AI"]["data"]["link_to"], "nexova-ai-assistant")
+        self.assertEqual(shortcuts["Open Invoxia AI"]["data"]["route"], "/app/nexova-ai-assistant")
+        self.assertEqual(shortcuts["Invoxia AI Settings"]["data"]["link_to"], "Nexova AI Settings")
+        self.assertEqual(shortcuts["Invoxia AI Audit Log"]["data"]["link_to"], "Nexova AI Audit Log")
         self.assertEqual(workspace["shortcuts"][0]["link_to"], "nexova-ai-assistant")
 
     def test_hooks_do_not_preload_page_controller(self) -> None:
@@ -81,6 +83,8 @@ class AppStructureTest(unittest.TestCase):
         self.assertIn('frappe.pages["nexova-ai-assistant"]', script)
         self.assertNotIn('frappe.pages["nexova-ai"]', script)
         self.assertIn("frappe.ui.make_app_page", script)
+        self.assertIn('title: __("Invoxia AI")', script)
+        self.assertIn("invoxia-mark.svg", script)
 
     def test_workspace_route_patch_is_registered(self) -> None:
         patches = PATCHES.read_text(encoding="utf-8").splitlines()

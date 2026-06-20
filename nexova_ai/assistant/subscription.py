@@ -33,7 +33,7 @@ def evaluate_subscription(status: str | None, enforcement_enabled: bool = True) 
         return SubscriptionDecision(
             allowed=True,
             status=normalized_status,
-            message="Nexova AI subscription is past due. Please update billing to avoid suspension.",
+            message="Invoxia AI subscription is past due. Please update billing to avoid suspension.",
             warn_only=True,
         )
 
@@ -41,11 +41,11 @@ def evaluate_subscription(status: str | None, enforcement_enabled: bool = True) 
         return SubscriptionDecision(
             allowed=False,
             status=normalized_status,
-            message="Nexova AI is currently not active for this site.",
+            message="Invoxia AI is currently not active for this site.",
         )
 
     return SubscriptionDecision(
         allowed=False,
         status=normalized_status,
-        message="Nexova AI subscription status is not recognized. Please contact the administrator.",
+        message="Invoxia AI subscription status is not recognized. Please contact the administrator.",
     )

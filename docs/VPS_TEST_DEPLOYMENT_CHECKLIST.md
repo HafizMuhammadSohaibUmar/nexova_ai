@@ -426,7 +426,7 @@ Username: Administrator
 Password: CHANGE_ME_ADMIN_PASSWORD
 ```
 
-### Nexova AI Page
+### Invoxia AI Page
 
 Open Desk and search for:
 

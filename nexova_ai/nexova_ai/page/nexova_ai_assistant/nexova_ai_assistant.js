@@ -8,7 +8,7 @@ frappe.pages["nexova-ai-assistant"].on_page_load = function (wrapper) {
 
   const page = frappe.ui.make_app_page({
     parent: wrapper,
-    title: __("Nexova AI"),
+    title: __("Invoxia AI"),
     single_column: true,
   });
 
@@ -24,9 +24,12 @@ frappe.pages["nexova-ai-assistant"].on_page_load = function (wrapper) {
     <div class="nexova-ai-page">
       <section class="nexova-ai-shell">
         <div class="nexova-ai-toolbar">
-          <div>
-            <h2>${__("Nexova AI")}</h2>
-            <p>${__("Ask ERPNext about sales, stock, and receivables.")}</p>
+          <div class="nexova-ai-brand">
+            <img class="nexova-ai-brand-mark" src="/assets/nexova_ai/branding/invoxia-mark.svg" alt="${__("Invoxia AI")}" />
+            <div>
+              <h2>${__("Invoxia AI")}</h2>
+              <p>${__("Ask ERPNext about sales, stock, and receivables.")}</p>
+            </div>
           </div>
           <button class="btn btn-default btn-sm nexova-ai-tts" type="button" aria-pressed="true">
             ${__("Voice replies: On")}
@@ -123,7 +126,7 @@ frappe.pages["nexova-ai-assistant"].on_page_load = function (wrapper) {
   }
 
   function addMessage(role, text) {
-    const label = role === "user" ? __("You") : __("Nexova AI");
+    const label = role === "user" ? __("You") : __("Invoxia AI");
     const $message = $(`
       <article class="nexova-ai-message nexova-ai-message-${role}">
         <div class="nexova-ai-message-label">

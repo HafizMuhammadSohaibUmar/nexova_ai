@@ -36,7 +36,7 @@ def ask(question: str | None = None, source: str = "Desk Page") -> dict[str, Any
             intent="permission_denied",
         )
     except Exception:
-        frappe.log_error(title="Nexova AI Error", message=frappe.get_traceback())
+        frappe.log_error(title="Invoxia AI Error", message=frappe.get_traceback())
         result = response(
             "Something went wrong while asking ERPNext.",
             status="Error",
@@ -58,7 +58,7 @@ def ask(question: str | None = None, source: str = "Desk Page") -> dict[str, Any
 
 def _handle_question(clean_question: str, normalized: str, settings) -> AssistantResult:
     if not settings.enabled:
-        return response("Nexova AI is currently disabled.", status="Blocked", intent="disabled")
+        return response("Invoxia AI is currently disabled.", status="Blocked", intent="disabled")
 
     subscription = evaluate_subscription(
         settings.subscription_status,

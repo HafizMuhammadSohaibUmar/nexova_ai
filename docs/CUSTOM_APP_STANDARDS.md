@@ -1,6 +1,6 @@
-# Nexova AI Custom App Standards
+# Invoxia AI Custom App Standards
 
-Nexova AI is an ERPNext add-on app. It must remain isolated from ERPNext and Frappe core.
+Invoxia AI is an ERPNext add-on app. It must remain isolated from ERPNext and Frappe core.
 
 ## Boundaries
 

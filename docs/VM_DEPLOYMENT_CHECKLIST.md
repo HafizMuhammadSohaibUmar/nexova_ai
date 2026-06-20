@@ -55,9 +55,9 @@ frappe.db.exists("Workspace", "Nexova AI")
 Browser checks:
 
 - Open `/app/nexova-ai`.
-- Click `Open Nexova AI`.
+- Click `Open Invoxia AI`.
 - Confirm `/app/nexova-ai-assistant` renders the assistant.
-- DevTools Console should not show Nexova AI JavaScript errors.
+- DevTools Console should not show Invoxia AI JavaScript errors.
 
 ## Security
 

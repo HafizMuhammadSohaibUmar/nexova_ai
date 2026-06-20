@@ -1,13 +1,13 @@
-# Nexova AI
+# Invoxia AI
 
-Custom Frappe app for ERPNext. The current VM deployment is pinned to ERPNext/Frappe v15; v16 compatibility should be validated on a separate test branch and VM before upgrading production-like sites.
+Custom Frappe app for ERPNext. The package name remains `nexova_ai`, while the user-facing product name is **Invoxia AI**. The current VM deployment is pinned to ERPNext/Frappe v15; v16 compatibility should be validated on a separate test branch and VM before upgrading production-like sites.
 
 This repository contains source files only. It does not modify ERPNext core, Docker files, or any existing ERPNext setup.
 
 ## Production V1 Foundation
 
-- Workspace: **Nexova AI**
-- Desk page: **Nexova AI Assistant**
+- Workspace: **Invoxia AI**
+- Desk page: **Invoxia AI**
 - Chat UI inside Frappe Desk
 - Browser voice input using the Web Speech API when supported
 - Text-to-speech replies using the browser Speech Synthesis API
@@ -17,8 +17,8 @@ This repository contains source files only. It does not modify ERPNext core, Doc
   - Stock balance from `Bin`
   - Pending receivables from submitted sales invoices
 - Production foundations:
-  - Single DocType: **Nexova AI Settings**
-  - Audit DocType: **Nexova AI Audit Log**
+  - Single DocType: **Nexova AI Settings** for compatibility
+  - Audit DocType: **Nexova AI Audit Log** for compatibility
   - Settings-based enable/disable, required role, subscription status, and audit toggles
   - Non-blocking audit logging for assistant requests
   - Workspace shortcuts for assistant, settings, and audit log
@@ -61,4 +61,4 @@ Example questions:
 
 The assistant intentionally avoids raw SQL and uses only `frappe.get_list`, so normal Frappe permissions are respected.
 
-Voice recognition is provided by the user's browser through the Web Speech API. Nexova AI normalizes common speech-to-text variants before matching supported intents, but the browser still controls the raw transcript quality.
+Voice recognition is provided by the user's browser through the Web Speech API. Invoxia AI normalizes common speech-to-text variants before matching supported intents, but the browser still controls the raw transcript quality.

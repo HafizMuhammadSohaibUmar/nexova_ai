@@ -1,6 +1,6 @@
 {
   "charts": [],
-  "content": "[{\"id\":\"nexova_ai_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Nexova AI</span>\",\"col\":12}},{\"id\":\"nexova_ai_assistant_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Open Nexova AI\",\"link_to\":\"nexova-ai-assistant\",\"type\":\"Page\",\"route\":\"/app/nexova-ai-assistant\",\"col\":3}},{\"id\":\"nexova_ai_settings_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Nexova AI Settings\",\"link_to\":\"Nexova AI Settings\",\"type\":\"DocType\",\"route\":\"/app/nexova-ai-settings\",\"col\":3}},{\"id\":\"nexova_ai_audit_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Nexova AI Audit Log\",\"link_to\":\"Nexova AI Audit Log\",\"type\":\"DocType\",\"route\":\"/app/nexova-ai-audit-log\",\"col\":3}}]",
+  "content": "[{\"id\":\"nexova_ai_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Invoxia AI</span>\",\"col\":12}},{\"id\":\"nexova_ai_assistant_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Open Invoxia AI\",\"link_to\":\"nexova-ai-assistant\",\"type\":\"Page\",\"route\":\"/app/nexova-ai-assistant\",\"col\":3}},{\"id\":\"nexova_ai_settings_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Invoxia AI Settings\",\"link_to\":\"Nexova AI Settings\",\"type\":\"DocType\",\"route\":\"/app/nexova-ai-settings\",\"col\":3}},{\"id\":\"nexova_ai_audit_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Invoxia AI Audit Log\",\"link_to\":\"Nexova AI Audit Log\",\"type\":\"DocType\",\"route\":\"/app/nexova-ai-audit-log\",\"col\":3}}]",
   "creation": "2026-06-16 00:00:00.000000",
   "custom_blocks": [],
   "docstatus": 0,
@@ -11,7 +11,7 @@
   "idx": 0,
   "indicator_color": "blue",
   "is_hidden": 0,
-  "label": "Nexova AI",
+  "label": "Invoxia AI",
   "links": [],
   "modified": "2026-06-16 00:00:00.000000",
   "modified_by": "Administrator",
@@ -33,7 +33,7 @@
       "color": "Blue",
       "doc_view": "",
       "format": "{}",
-      "label": "Open Nexova AI",
+      "label": "Open Invoxia AI",
       "link_to": "nexova-ai-assistant",
       "stats_filter": "[]",
       "type": "Page"
@@ -42,7 +42,7 @@
       "color": "Grey",
       "doc_view": "",
       "format": "{}",
-      "label": "Nexova AI Settings",
+      "label": "Invoxia AI Settings",
       "link_to": "Nexova AI Settings",
       "stats_filter": "[]",
       "type": "DocType"
@@ -51,11 +51,11 @@
       "color": "Grey",
       "doc_view": "List",
       "format": "{}",
-      "label": "Nexova AI Audit Log",
+      "label": "Invoxia AI Audit Log",
       "link_to": "Nexova AI Audit Log",
       "stats_filter": "[]",
       "type": "DocType"
     }
   ],
-  "title": "Nexova AI"
+  "title": "Invoxia AI"
 }
