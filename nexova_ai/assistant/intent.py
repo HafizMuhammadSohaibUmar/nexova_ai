@@ -32,7 +32,7 @@ def detect_language(text: str) -> str:
 def detect_intent(question: str) -> str:
     text = normalize_text(question)
 
-    if contains_phrase(text, "navigation"):
+    if _is_explicit_navigation(text):
         return "navigation"
 
     if contains_phrase(text, "knowledge"):
@@ -105,7 +105,7 @@ def detect_intent(question: str) -> str:
         return "stock_balance"
 
     if contains_phrase(text, "top") and contains_phrase(text, "customer"):
-        return "sales_summary"
+        return "customer_wise_sales"
 
     if contains_phrase(text, "top") and contains_phrase(text, "supplier"):
         return "purchase_summary"
@@ -134,4 +134,26 @@ def detect_intent(question: str) -> str:
     if contains_any_phrase(text, ("sales",)):
         return "sales_summary"
 
+    if contains_phrase(text, "navigation"):
+        return "navigation"
+
     return "unknown"
+
+
+def _is_explicit_navigation(text: str) -> bool:
+    return any(
+        phrase in text
+        for phrase in (
+            "open",
+            "go to",
+            "goto",
+            "navigate",
+            "take me to",
+            "kholo",
+            "khol do",
+            "open karo",
+            "le chalo",
+            "\u06a9\u06be\u0648\u0644\u0648",
+            "\u062c\u0627\u0624",
+        )
+    )

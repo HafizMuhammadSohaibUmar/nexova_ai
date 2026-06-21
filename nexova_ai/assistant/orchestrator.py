@@ -106,6 +106,13 @@ def _handle_question(clean_question: str, normalized: str, settings) -> Assistan
             model=settings.local_llm_model,
         )
         if suggestion:
+            if suggestion.needs_clarification:
+                return response(
+                    "I understood the request, but need one more detail before using ERPNext data. Please be more specific.",
+                    status="Blocked",
+                    intent="clarification",
+                    data={"type": "clarification", "suggested_intent": suggestion.intent},
+                )
             intent = suggestion.intent
 
     if intent == "navigation":
@@ -113,6 +120,20 @@ def _handle_question(clean_question: str, normalized: str, settings) -> Assistan
             return response("Navigation assistant is disabled for this site.", status="Blocked", intent=intent)
 
         return resolve_navigation(clean_question)
+
+    if intent == "dynamic_query":
+        if not settings.live_data_enabled:
+            return response("Live data assistant is disabled for this site.", status="Blocked", intent=intent)
+
+        dynamic_result = answer_dynamic_query(clean_question)
+        if dynamic_result:
+            return dynamic_result
+
+        return response(
+            "I could not find a readable ERPNext area for that query. Please name the DocType, report, customer, supplier, item, or account.",
+            status="Blocked",
+            intent="dynamic_query",
+        )
 
     if intent == "knowledge":
         return answer_knowledge_question(clean_question, settings)

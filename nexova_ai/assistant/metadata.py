@@ -123,7 +123,7 @@ def get_doctype_summary(doctype: str) -> DocTypeSummary:
     )
 
 
-def find_doctype_by_phrase(question: str, limit: int = 5) -> list[DocTypeSummary]:
+def find_doctype_matches(question: str, limit: int = 5) -> list[tuple[int, DocTypeSummary]]:
     text = canonical_text(question)
     matches: list[tuple[int, str]] = []
 
@@ -144,9 +144,13 @@ def find_doctype_by_phrase(question: str, limit: int = 5) -> list[DocTypeSummary
             matches.append((score, doctype))
 
     return [
-        get_doctype_summary(doctype)
-        for _, doctype in sorted(matches, key=lambda item: item[0], reverse=True)[:limit]
+        (score, get_doctype_summary(doctype))
+        for score, doctype in sorted(matches, key=lambda item: item[0], reverse=True)[:limit]
     ]
+
+
+def find_doctype_by_phrase(question: str, limit: int = 5) -> list[DocTypeSummary]:
+    return [summary for _, summary in find_doctype_matches(question, limit=limit)]
 
 
 def describe_allowed_actions(doctype: str) -> dict[str, bool]:

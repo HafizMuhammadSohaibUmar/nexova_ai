@@ -335,7 +335,10 @@ class AppStructureTest(unittest.TestCase):
         self.assertIn("suggest_intent_with_llm", orchestrator)
         self.assertIn("parse_intent_response", llm)
         self.assertIn('provider != "Local Ollama"', llm)
-        self.assertIn("intent not in TOOL_REGISTRY", llm)
+        self.assertIn("BUILTIN_ROUTER_INTENTS", llm)
+        self.assertIn("approved_intents = set(TOOL_REGISTRY) | BUILTIN_ROUTER_INTENTS", llm)
+        self.assertIn('"dynamic_query"', llm)
+        self.assertIn('"navigation"', llm)
         self.assertIn('"format": "json"', llm)
         self.assertIn('provider in {"Disabled", "Deterministic"}', llm)
 

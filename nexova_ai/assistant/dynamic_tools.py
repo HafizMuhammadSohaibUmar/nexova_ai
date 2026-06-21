@@ -15,7 +15,33 @@ MAX_COUNT_SCAN = 500
 
 
 def can_try_dynamic_query(question: str) -> bool:
-    return contains_any_phrase(question, ("list", "count", "navigation"))
+    text = normalize_text(question)
+    dynamic_terms = (
+        "total",
+        "sum",
+        "amount",
+        "balance",
+        "recent",
+        "latest",
+        "last",
+        "top",
+        "wise",
+        "unpaid",
+        "pending",
+        "submitted",
+        "draft",
+        "cancelled",
+        "today",
+        "this month",
+        "last 30 days",
+        "kitna",
+        "kitne",
+        "dikhao",
+        "batao",
+    )
+    return contains_any_phrase(question, ("list", "count", "navigation")) or any(
+        term in text for term in dynamic_terms
+    )
 
 
 def answer_dynamic_query(question: str):

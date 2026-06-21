@@ -20,7 +20,8 @@ class FakeCache:
 
 
 def _install_fake_frappe(cache: FakeCache) -> None:
-    fake = types.SimpleNamespace()
+    fake = types.ModuleType("frappe")
+    fake.__path__ = []
     fake.session = types.SimpleNamespace(user="test@example.com")
     fake.local = types.SimpleNamespace(site="test.local")
     fake.flags = types.SimpleNamespace()
@@ -28,10 +29,17 @@ def _install_fake_frappe(cache: FakeCache) -> None:
     fake.throw = lambda message: (_ for _ in ()).throw(Exception(message))
     sys.modules["frappe"] = fake
 
+    fake_utils = types.ModuleType("frappe.utils")
+    fake_utils.flt = lambda value=0: float(value or 0)
+    fake_utils.getdate = lambda value=None: value
+    fake_utils.nowdate = lambda: "2026-06-21"
+    sys.modules["frappe.utils"] = fake_utils
+
 
 class ProductionControlsTest(unittest.TestCase):
     def tearDown(self) -> None:
         sys.modules.pop("frappe", None)
+        sys.modules.pop("frappe.utils", None)
 
     def test_subscription_status_matrix(self) -> None:
         from nexova_ai.assistant.subscription import evaluate_subscription
@@ -228,6 +236,36 @@ class ProductionControlsTest(unittest.TestCase):
         self.assertEqual(unpaid_invoices.data["route"], ["List", "Sales Invoice"])
         self.assertEqual(unpaid_invoices.data["route_options"]["docstatus"], 1)
         self.assertEqual(unpaid_invoices.data["route_options"]["outstanding_amount"], [">", 0])
+
+    def test_intent_distinguishes_answers_from_explicit_navigation(self) -> None:
+        from nexova_ai.assistant.intent import detect_intent
+
+        self.assertEqual(detect_intent("show me top customers by sales"), "customer_wise_sales")
+        self.assertEqual(detect_intent("customer list kholo"), "navigation")
+        self.assertEqual(detect_intent("stock balance batao"), "stock_balance")
+
+    def test_llm_router_accepts_only_approved_builtin_or_registry_intents(self) -> None:
+        cache = FakeCache()
+        _install_fake_frappe(cache)
+
+        from nexova_ai.assistant.llm import parse_intent_response
+
+        dynamic = parse_intent_response(
+            {"message": {"content": '{"intent":"dynamic_query","confidence":0.91,"arguments":{}}'}}
+        )
+        self.assertIsNotNone(dynamic)
+        self.assertEqual(dynamic.intent, "dynamic_query")
+
+        navigation = parse_intent_response(
+            {"message": {"content": '{"intent":"navigation","confidence":0.9,"arguments":{}}'}}
+        )
+        self.assertIsNotNone(navigation)
+        self.assertEqual(navigation.intent, "navigation")
+
+        unsafe = parse_intent_response(
+            {"message": {"content": '{"intent":"frappe_db_sql","confidence":1,"arguments":{}}'}}
+        )
+        self.assertIsNone(unsafe)
 
 
 if __name__ == "__main__":

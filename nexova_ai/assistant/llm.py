@@ -11,6 +11,9 @@ from nexova_ai.assistant.registry import TOOL_REGISTRY
 from nexova_ai.assistant.vocabulary import fuzzy_match_score
 
 
+BUILTIN_ROUTER_INTENTS = {"navigation", "dynamic_query", "knowledge", "unknown"}
+
+
 @dataclass(frozen=True)
 class IntentSuggestion:
     intent: str
@@ -25,6 +28,8 @@ Return JSON only. Do not explain.
 Choose only one approved intent from the provided list.
 Never invent tools. Never query ERPNext directly.
 Use needs_clarification=true when the command is ambiguous.
+Use dynamic_query for safe metadata-driven ERPNext list, count, sum, or group questions.
+Use navigation for opening lists, reports, dashboards, workspaces, pages, or documents.
 Schema:
 {"intent":"tool_name","confidence":0.0,"arguments":{},"needs_clarification":false,"clarification_question":""}
 """
@@ -110,7 +115,8 @@ def parse_intent_response(raw: str | dict[str, Any]) -> IntentSuggestion | None:
         return None
 
     intent = str(parsed_content.get("intent") or "").strip()
-    if intent not in TOOL_REGISTRY:
+    approved_intents = set(TOOL_REGISTRY) | BUILTIN_ROUTER_INTENTS
+    if intent not in approved_intents:
         return None
 
     confidence = _confidence_to_int(parsed_content.get("confidence"))
@@ -140,6 +146,32 @@ def _ollama_payload(question: str, model: str) -> dict[str, Any]:
         }
         for tool in TOOL_REGISTRY.values()
     ]
+    approved_intents = approved_tools + [
+        {
+            "name": "navigation",
+            "label": "ERPNext Navigation",
+            "description": "Open ERPNext lists, reports, dashboards, workspaces, pages, modules, or documents.",
+            "aliases": ["open", "go to", "kholo", "report open karo"],
+        },
+        {
+            "name": "dynamic_query",
+            "label": "Safe Dynamic ERPNext Query",
+            "description": "Answer bounded permission-aware list, count, sum, and group questions using DocType metadata.",
+            "aliases": ["show", "list", "count", "total", "by customer", "by item", "dikhao", "batao"],
+        },
+        {
+            "name": "knowledge",
+            "label": "Knowledge Question",
+            "description": "Answer from approved knowledge sources, SOPs, policies, and guides.",
+            "aliases": ["policy", "manual", "knowledge", "SOP"],
+        },
+        {
+            "name": "unknown",
+            "label": "Unknown Or Needs Clarification",
+            "description": "Use when the request is unclear or unsafe.",
+            "aliases": ["unclear", "ambiguous"],
+        },
+    ]
     return {
         "model": model or "qwen3:8b",
         "stream": False,
@@ -151,7 +183,7 @@ def _ollama_payload(question: str, model: str) -> dict[str, Any]:
                 "content": json.dumps(
                     {
                         "question": question,
-                        "approved_tools": approved_tools,
+                        "approved_intents": approved_intents,
                     },
                     ensure_ascii=False,
                 ),
