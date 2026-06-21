@@ -33,7 +33,7 @@ services:
 
   whisper:
     build:
-      context: ./whisper-cpp
+      context: ./deploy/ai/whisper-cpp
     restart: unless-stopped
     environment:
       WHISPER_MODEL: ${WHISPER_MODEL:-large-v3-turbo-q5_0}

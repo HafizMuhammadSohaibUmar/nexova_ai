@@ -538,6 +538,7 @@ class AppStructureTest(unittest.TestCase):
         self.assertIn("ollama pull", compose)
         self.assertIn("OLLAMA_MODEL", compose)
         self.assertIn("WHISPER_MODEL", compose)
+        self.assertIn("context: ./deploy/ai/whisper-cpp", compose)
         self.assertIn("expose:", compose)
         self.assertNotIn("0.0.0.0", compose)
         self.assertIn("127.0.0.1:${OLLAMA_PORT:-11434}:11434", local_ports)
