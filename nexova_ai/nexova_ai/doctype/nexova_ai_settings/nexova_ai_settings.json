@@ -306,7 +306,7 @@
       "label": "Local LLM Endpoint"
     },
     {
-      "default": "qwen3:14b",
+      "default": "qwen3:8b",
       "description": "Local Ollama model used for strict intent routing.",
       "fieldname": "local_llm_model",
       "fieldtype": "Data",

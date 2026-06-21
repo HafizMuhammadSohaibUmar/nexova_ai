@@ -938,7 +938,7 @@ This file tracks what remains before Invoxia AI is ready for paid clients across
 - Safe CRUD draft foundation, with actual write execution still disabled.
 - Browser voice foundation and provider settings.
 - Local/cloud AI deployment automation for Ollama/Qwen and whisper.cpp.
-- Standard model profile: `qwen3:14b` and `large-v3-turbo-q5_0`.
+- Standard model profile: Whisper Medium, Qwen 3 8B, Ollama, ERPNext, and the Nexova AI Tool Registry.
 - Audit logs, tool execution logs, retention settings, rate limits, and subscription status settings.
 - Seven-day subscription grace period setting and backend policy foundation.
 

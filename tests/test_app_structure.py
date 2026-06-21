@@ -167,7 +167,7 @@ class AppStructureTest(unittest.TestCase):
         self.assertIn("Local Whisper", fields["stt_provider"]["options"])
         self.assertIn("Cloud Deepgram", fields["stt_provider"]["options"])
         self.assertIn("Local Ollama", fields["llm_provider"]["options"])
-        self.assertEqual(fields["local_llm_model"]["default"], "qwen3:14b")
+        self.assertEqual(fields["local_llm_model"]["default"], "qwen3:8b")
         self.assertIn("Local", fields["rag_provider"]["options"])
 
     def test_api_uses_settings_and_audit_log(self) -> None:
@@ -543,8 +543,8 @@ class AppStructureTest(unittest.TestCase):
         self.assertNotIn("0.0.0.0", compose)
         self.assertIn("127.0.0.1:${OLLAMA_PORT:-11434}:11434", local_ports)
         self.assertIn("127.0.0.1:${WHISPER_PORT:-9000}:9000", local_ports)
-        self.assertIn("qwen3:14b", env)
-        self.assertIn("WHISPER_MODEL=large-v3-turbo-q5_0", env)
+        self.assertIn("qwen3:8b", env)
+        self.assertIn("WHISPER_MODEL=medium", env)
 
     def test_whisper_container_builds_from_source_and_downloads_model(self) -> None:
         dockerfile = (DEPLOY_AI / "whisper-cpp" / "Dockerfile").read_text(encoding="utf-8")
@@ -566,7 +566,7 @@ class AppStructureTest(unittest.TestCase):
         for phrase in (
             "Cloud Hosted Mode",
             "Local Offline Mode",
-            "qwen3:14b",
+            "qwen3:8b",
             "whisper.cpp",
             "Never expose port `11434`",
             "Never expose port `9000`",

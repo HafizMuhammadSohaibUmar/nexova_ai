@@ -28,7 +28,7 @@ class AssistantSettings:
     tts_provider: str = "Browser"
     local_stt_endpoint: str = "http://127.0.0.1:9000"
     local_llm_endpoint: str = "http://127.0.0.1:11434"
-    local_llm_model: str = "qwen3:14b"
+    local_llm_model: str = "qwen3:8b"
     local_rag_endpoint: str = "local"
     cloud_stt_provider: str = "Deepgram"
     cloud_llm_provider: str = "Mistral"
@@ -79,7 +79,7 @@ def get_settings() -> AssistantSettings:
         tts_provider=getattr(doc, "tts_provider", None) or "Browser",
         local_stt_endpoint=getattr(doc, "local_stt_endpoint", None) or "http://127.0.0.1:9000",
         local_llm_endpoint=getattr(doc, "local_llm_endpoint", None) or "http://127.0.0.1:11434",
-        local_llm_model=getattr(doc, "local_llm_model", None) or "qwen3:14b",
+        local_llm_model=getattr(doc, "local_llm_model", None) or "qwen3:8b",
         local_rag_endpoint=getattr(doc, "local_rag_endpoint", None) or "local",
         cloud_stt_provider=getattr(doc, "cloud_stt_provider", None) or "Deepgram",
         cloud_llm_provider=getattr(doc, "cloud_llm_provider", None) or "Mistral",

@@ -141,7 +141,7 @@ def _ollama_payload(question: str, model: str) -> dict[str, Any]:
         for tool in TOOL_REGISTRY.values()
     ]
     return {
-        "model": model or "qwen3:14b",
+        "model": model or "qwen3:8b",
         "stream": False,
         "format": "json",
         "messages": [

@@ -20,7 +20,7 @@ services:
         condition: service_started
     environment:
       OLLAMA_HOST: http://ollama:11434
-      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3:14b}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3:8b}
     entrypoint:
       - /bin/sh
       - -lc
@@ -36,7 +36,7 @@ services:
       context: ./deploy/ai/whisper-cpp
     restart: unless-stopped
     environment:
-      WHISPER_MODEL: ${WHISPER_MODEL:-large-v3-turbo-q5_0}
+      WHISPER_MODEL: ${WHISPER_MODEL:-medium}
       WHISPER_PORT: ${WHISPER_PORT:-9000}
     volumes:
       - whisper-models:/models
