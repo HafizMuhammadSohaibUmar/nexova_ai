@@ -10,6 +10,19 @@
     "deployment_section",
     "deployment_mode",
     "license_mode",
+    "license_section",
+    "license_key",
+    "site_id",
+    "company_id",
+    "license_server_url",
+    "license_verification_secret",
+    "offline_license_payload",
+    "offline_license_signature",
+    "license_plan",
+    "license_expires_on",
+    "license_last_checked_on",
+    "license_next_check_on",
+    "past_due_since",
     "feature_flags_section",
     "navigation_enabled",
     "live_data_enabled",
@@ -88,6 +101,82 @@
       "fieldtype": "Select",
       "label": "License Mode",
       "options": "Online Subscription\nSigned Offline License\nDisabled"
+    },
+    {
+      "fieldname": "license_section",
+      "fieldtype": "Section Break",
+      "label": "License"
+    },
+    {
+      "fieldname": "license_key",
+      "fieldtype": "Data",
+      "label": "License Key"
+    },
+    {
+      "description": "Stable site identifier bound to online and offline licenses. For cloud sites this is normally the Frappe site name.",
+      "fieldname": "site_id",
+      "fieldtype": "Data",
+      "label": "Licensed Site ID"
+    },
+    {
+      "fieldname": "company_id",
+      "fieldtype": "Data",
+      "label": "Licensed Company ID"
+    },
+    {
+      "default": "https://license.invoxia.sohaib.systems",
+      "description": "Central license server used by online subscription mode.",
+      "fieldname": "license_server_url",
+      "fieldtype": "Data",
+      "label": "License Server URL"
+    },
+    {
+      "description": "Secret used to verify signed offline licenses. Store a client-specific value here; keep the signing secret on your license server.",
+      "fieldname": "license_verification_secret",
+      "fieldtype": "Password",
+      "label": "License Verification Secret"
+    },
+    {
+      "description": "Signed offline license JSON issued by the Invoxia license server.",
+      "fieldname": "offline_license_payload",
+      "fieldtype": "Long Text",
+      "label": "Offline License Payload"
+    },
+    {
+      "description": "Base64url HMAC signature for the offline license payload.",
+      "fieldname": "offline_license_signature",
+      "fieldtype": "Data",
+      "label": "Offline License Signature"
+    },
+    {
+      "fieldname": "license_plan",
+      "fieldtype": "Data",
+      "label": "License Plan",
+      "read_only": 1
+    },
+    {
+      "fieldname": "license_expires_on",
+      "fieldtype": "Date",
+      "label": "License Expires On",
+      "read_only": 1
+    },
+    {
+      "fieldname": "license_last_checked_on",
+      "fieldtype": "Datetime",
+      "label": "License Last Checked On",
+      "read_only": 1
+    },
+    {
+      "fieldname": "license_next_check_on",
+      "fieldtype": "Datetime",
+      "label": "License Next Check On",
+      "read_only": 1
+    },
+    {
+      "fieldname": "past_due_since",
+      "fieldtype": "Date",
+      "label": "Past Due Since",
+      "read_only": 1
     },
     {
       "fieldname": "feature_flags_section",

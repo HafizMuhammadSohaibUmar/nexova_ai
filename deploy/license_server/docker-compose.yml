@@ -1,0 +1,16 @@
+services:
+  license-server:
+    build: .
+    restart: unless-stopped
+    environment:
+      INVOXIA_LICENSE_DB: /data/licenses.json
+      INVOXIA_LICENSE_SIGNING_SECRET: ${INVOXIA_LICENSE_SIGNING_SECRET:?set signing secret}
+      INVOXIA_LICENSE_ADMIN_TOKEN: ${INVOXIA_LICENSE_ADMIN_TOKEN:?set admin token}
+      PORT: 8088
+    volumes:
+      - license-data:/data
+    ports:
+      - "127.0.0.1:8088:8088"
+
+volumes:
+  license-data:

@@ -16,6 +16,7 @@ HOOKS = APP / "hooks.py"
 PATCHES = APP / "patches.txt"
 ASSISTANT = APP / "assistant"
 DEPLOY_AI = ROOT / "deploy" / "ai"
+DEPLOY_LICENSE = ROOT / "deploy" / "license_server"
 
 
 def _load_hooks() -> dict[str, object]:
@@ -76,6 +77,10 @@ class AppStructureTest(unittest.TestCase):
         self.assertIn(
             "nexova_ai.assistant.retention.cleanup_audit_logs",
             hooks["scheduler_events"]["daily"],
+        )
+        self.assertIn(
+            "nexova_ai.assistant.license.sync_license_status",
+            hooks["scheduler_events"]["hourly"],
         )
         self.assertEqual(
             hooks["doc_events"]["*"]["before_save"],
@@ -159,6 +164,17 @@ class AppStructureTest(unittest.TestCase):
         for fieldname in (
             "deployment_mode",
             "license_mode",
+            "license_key",
+            "site_id",
+            "company_id",
+            "license_server_url",
+            "license_verification_secret",
+            "offline_license_payload",
+            "offline_license_signature",
+            "license_plan",
+            "license_expires_on",
+            "license_last_checked_on",
+            "past_due_since",
             "stt_provider",
             "llm_provider",
             "rag_provider",
@@ -455,6 +471,11 @@ class AppStructureTest(unittest.TestCase):
 
         self.assertIn("class LicenseDecision", license_source)
         self.assertIn("evaluate_license", license_source)
+        self.assertIn("evaluate_configured_license", license_source)
+        self.assertIn("evaluate_signed_offline_license", license_source)
+        self.assertIn("sign_license_payload", license_source)
+        self.assertIn("verify_license_signature", license_source)
+        self.assertIn("sync_license_status", license_source)
         self.assertIn("Signed Offline License", license_source)
         self.assertIn("erp_read_only=True", license_source)
         self.assertIn("allow_backup_export=True", license_source)
@@ -588,6 +609,25 @@ class AppStructureTest(unittest.TestCase):
             "Current App Integration Status",
         ):
             self.assertIn(phrase, source)
+
+    def test_license_server_scaffold_exists(self) -> None:
+        for relative_path in (
+            "server.py",
+            "Dockerfile",
+            "docker-compose.yml",
+            ".env.example",
+            "README.md",
+        ):
+            self.assertTrue((DEPLOY_LICENSE / relative_path).exists(), relative_path)
+
+        server = (DEPLOY_LICENSE / "server.py").read_text(encoding="utf-8")
+        readme = (DEPLOY_LICENSE / "README.md").read_text(encoding="utf-8")
+
+        self.assertIn("/api/v1/issue", server)
+        self.assertIn("/api/v1/check", server)
+        self.assertIn("INVOXIA_LICENSE_SIGNING_SECRET", server)
+        self.assertIn("hmac", server)
+        self.assertIn("signed offline license", readme.lower())
 
 
 if __name__ == "__main__":

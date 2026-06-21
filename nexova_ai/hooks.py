@@ -9,6 +9,9 @@ required_apps = ["erpnext"]
 app_include_css = "/assets/nexova_ai/css/nexova_ai.css"
 
 scheduler_events = {
+    "hourly": [
+        "nexova_ai.assistant.license.sync_license_status",
+    ],
     "daily": [
         "nexova_ai.assistant.retention.cleanup_audit_logs",
     ],

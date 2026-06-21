@@ -105,6 +105,82 @@ class ProductionControlsTest(unittest.TestCase):
         self.assertTrue(expired_grace.erp_read_only)
         self.assertTrue(expired_grace.allow_backup_export)
 
+    def test_signed_offline_license_accepts_valid_payload_and_rejects_tampering(self) -> None:
+        from datetime import date
+
+        from nexova_ai.assistant.license import (
+            evaluate_signed_offline_license,
+            sign_license_payload,
+            verify_license_signature,
+        )
+
+        secret = "client-secret"
+        payload = {
+            "license_key": "INV-TEST",
+            "site_id": "test.local",
+            "company_id": "client-001",
+            "plan": "Local Standard",
+            "status": "Active",
+            "expires_on": "2026-12-31",
+            "grace_period_days": 7,
+            "features": ["navigation", "live_data", "voice"],
+        }
+        signature = sign_license_payload(payload, secret)
+
+        self.assertTrue(verify_license_signature(payload, signature, secret))
+        self.assertFalse(
+            verify_license_signature({**payload, "status": "Suspended"}, signature, secret)
+        )
+
+        decision = evaluate_signed_offline_license(
+            payload_json=payload,
+            signature=signature,
+            verification_secret=secret,
+            expected_site_id="test.local",
+            today=date(2026, 6, 21),
+        )
+        self.assertTrue(decision.ai_enabled)
+        self.assertFalse(decision.erp_read_only)
+        self.assertEqual(decision.license_key, "INV-TEST")
+
+    def test_signed_offline_license_blocks_wrong_site_and_expired_after_grace(self) -> None:
+        from datetime import date
+
+        from nexova_ai.assistant.license import evaluate_signed_offline_license, sign_license_payload
+
+        secret = "client-secret"
+        payload = {
+            "license_key": "INV-TEST",
+            "site_id": "test.local",
+            "plan": "Local Standard",
+            "status": "Active",
+            "expires_on": "2026-06-01",
+            "grace_period_days": 7,
+        }
+        signature = sign_license_payload(payload, secret)
+
+        wrong_site = evaluate_signed_offline_license(
+            payload_json=payload,
+            signature=signature,
+            verification_secret=secret,
+            expected_site_id="other.local",
+            today=date(2026, 6, 2),
+        )
+        self.assertFalse(wrong_site.ai_enabled)
+        self.assertTrue(wrong_site.erp_read_only)
+        self.assertIn("different site", wrong_site.message)
+
+        expired = evaluate_signed_offline_license(
+            payload_json=payload,
+            signature=signature,
+            verification_secret=secret,
+            expected_site_id="test.local",
+            today=date(2026, 6, 21),
+        )
+        self.assertFalse(expired.ai_enabled)
+        self.assertTrue(expired.erp_read_only)
+        self.assertTrue(expired.allow_backup_export)
+
     def test_read_only_guard_blocks_business_writes_when_suspended(self) -> None:
         cache = FakeCache()
         _install_fake_frappe(cache)

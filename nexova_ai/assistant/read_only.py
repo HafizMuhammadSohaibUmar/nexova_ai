@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import frappe
 
-from nexova_ai.assistant.license import evaluate_license
+from nexova_ai.assistant.license import evaluate_configured_license
 from nexova_ai.assistant.settings import get_settings
 
 
@@ -38,12 +38,7 @@ def enforce_write_allowed(doc, method: str | None = None) -> None:
 
 def is_write_allowed(doctype: str, operation: str) -> tuple[bool, str]:
     settings = get_settings()
-    decision = evaluate_license(
-        subscription_status=settings.subscription_status,
-        license_mode=settings.license_mode,
-        enforcement_enabled=settings.subscription_enforcement_enabled,
-        grace_period_days=settings.subscription_grace_period_days,
-    )
+    decision = evaluate_configured_license(settings)
 
     if operation not in WRITE_OPERATIONS:
         return True, ""

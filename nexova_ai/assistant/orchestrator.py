@@ -9,6 +9,7 @@ from nexova_ai.assistant.audit import log_request
 from nexova_ai.assistant.contracts import AssistantResult, response
 from nexova_ai.assistant.dynamic_tools import answer_dynamic_query, can_try_dynamic_query
 from nexova_ai.assistant.intent import detect_intent, detect_language, normalize_text
+from nexova_ai.assistant.license import evaluate_configured_license
 from nexova_ai.assistant.llm import suggest_intent_with_llm
 from nexova_ai.assistant.navigation import resolve_navigation
 from nexova_ai.assistant.permissions import has_required_role
@@ -60,6 +61,14 @@ def ask(question: str | None = None, source: str = "Desk Page") -> dict[str, Any
 def _handle_question(clean_question: str, normalized: str, settings) -> AssistantResult:
     if not settings.enabled:
         return response("Invoxia AI is currently disabled.", status="Blocked", intent="disabled")
+
+    license_decision = evaluate_configured_license(settings)
+    if not license_decision.ai_enabled:
+        return response(
+            license_decision.message or "Invoxia AI is not available for this license.",
+            status="Blocked",
+            intent="license",
+        )
 
     subscription = evaluate_subscription(
         settings.subscription_status,

@@ -12,6 +12,18 @@ class AssistantSettings:
     required_role: str = "System Manager"
     deployment_mode: str = "Cloud Hosted"
     license_mode: str = "Online Subscription"
+    license_key: str = ""
+    site_id: str = ""
+    company_id: str = ""
+    license_server_url: str = "https://license.invoxia.sohaib.systems"
+    license_verification_secret: str = ""
+    offline_license_payload: str = ""
+    offline_license_signature: str = ""
+    license_plan: str = ""
+    license_expires_on: str = ""
+    license_last_checked_on: str = ""
+    license_next_check_on: str = ""
+    past_due_since: str = ""
     navigation_enabled: bool = True
     live_data_enabled: bool = True
     voice_enabled: bool = True
@@ -58,6 +70,19 @@ def get_settings() -> AssistantSettings:
         required_role=doc.required_role or "System Manager",
         deployment_mode=getattr(doc, "deployment_mode", None) or "Cloud Hosted",
         license_mode=getattr(doc, "license_mode", None) or "Online Subscription",
+        license_key=getattr(doc, "license_key", None) or "",
+        site_id=getattr(doc, "site_id", None) or "",
+        company_id=getattr(doc, "company_id", None) or "",
+        license_server_url=getattr(doc, "license_server_url", None)
+        or "https://license.invoxia.sohaib.systems",
+        license_verification_secret=_password(doc, "license_verification_secret"),
+        offline_license_payload=getattr(doc, "offline_license_payload", None) or "",
+        offline_license_signature=getattr(doc, "offline_license_signature", None) or "",
+        license_plan=getattr(doc, "license_plan", None) or "",
+        license_expires_on=str(getattr(doc, "license_expires_on", None) or ""),
+        license_last_checked_on=str(getattr(doc, "license_last_checked_on", None) or ""),
+        license_next_check_on=str(getattr(doc, "license_next_check_on", None) or ""),
+        past_due_since=str(getattr(doc, "past_due_since", None) or ""),
         navigation_enabled=_enabled(getattr(doc, "navigation_enabled", 1)),
         live_data_enabled=_enabled(getattr(doc, "live_data_enabled", 1)),
         voice_enabled=_enabled(getattr(doc, "voice_enabled", 1)),
@@ -110,6 +135,15 @@ def _enabled(value: Any) -> bool:
         return True
 
     return bool(value)
+
+
+def _password(doc: Any, fieldname: str) -> str:
+    try:
+        value = doc.get_password(fieldname)
+    except Exception:
+        value = getattr(doc, fieldname, None)
+
+    return value or ""
 
 
 def _positive_int(value: Any, fallback: int) -> int:
