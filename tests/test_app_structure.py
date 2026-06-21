@@ -77,6 +77,14 @@ class AppStructureTest(unittest.TestCase):
             "nexova_ai.assistant.retention.cleanup_audit_logs",
             hooks["scheduler_events"]["daily"],
         )
+        self.assertEqual(
+            hooks["doc_events"]["*"]["before_save"],
+            "nexova_ai.assistant.read_only.enforce_write_allowed",
+        )
+        self.assertEqual(
+            hooks["doc_events"]["*"]["before_submit"],
+            "nexova_ai.assistant.read_only.enforce_write_allowed",
+        )
 
     def test_page_controller_registers_only_assistant_route(self) -> None:
         script = (PAGE / "nexova_ai_assistant.js").read_text(encoding="utf-8")
@@ -446,7 +454,9 @@ class AppStructureTest(unittest.TestCase):
         self.assertIn("erp_read_only=True", license_source)
         self.assertIn("allow_backup_export=True", license_source)
         self.assertIn("is_write_allowed", read_only_source)
+        self.assertIn("enforce_write_allowed", read_only_source)
         self.assertIn("WRITE_OPERATIONS", read_only_source)
+        self.assertIn("Nexova AI Settings", read_only_source)
 
     def test_provider_contracts_cover_local_and_cloud_options(self) -> None:
         source = (ASSISTANT / "providers.py").read_text(encoding="utf-8")

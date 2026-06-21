@@ -13,3 +13,13 @@ scheduler_events = {
         "nexova_ai.assistant.retention.cleanup_audit_logs",
     ],
 }
+
+doc_events = {
+    "*": {
+        "before_insert": "nexova_ai.assistant.read_only.enforce_write_allowed",
+        "before_save": "nexova_ai.assistant.read_only.enforce_write_allowed",
+        "before_submit": "nexova_ai.assistant.read_only.enforce_write_allowed",
+        "before_cancel": "nexova_ai.assistant.read_only.enforce_write_allowed",
+        "on_trash": "nexova_ai.assistant.read_only.enforce_write_allowed",
+    },
+}

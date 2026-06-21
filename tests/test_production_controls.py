@@ -23,7 +23,9 @@ def _install_fake_frappe(cache: FakeCache) -> None:
     fake = types.SimpleNamespace()
     fake.session = types.SimpleNamespace(user="test@example.com")
     fake.local = types.SimpleNamespace(site="test.local")
+    fake.flags = types.SimpleNamespace()
     fake.cache = lambda: cache
+    fake.throw = lambda message: (_ for _ in ()).throw(Exception(message))
     sys.modules["frappe"] = fake
 
 
@@ -94,6 +96,43 @@ class ProductionControlsTest(unittest.TestCase):
         self.assertFalse(expired_grace.ai_enabled)
         self.assertTrue(expired_grace.erp_read_only)
         self.assertTrue(expired_grace.allow_backup_export)
+
+    def test_read_only_guard_blocks_business_writes_when_suspended(self) -> None:
+        cache = FakeCache()
+        _install_fake_frappe(cache)
+
+        settings_module = importlib.import_module("nexova_ai.assistant.settings")
+        read_only = importlib.reload(importlib.import_module("nexova_ai.assistant.read_only"))
+        read_only.get_settings = lambda: settings_module.AssistantSettings(
+            subscription_status="Suspended",
+            subscription_enforcement_enabled=True,
+        )
+
+        allowed, message = read_only.is_write_allowed("Sales Invoice", "write")
+        self.assertFalse(allowed)
+        self.assertIn("readable", message)
+
+        self.assertEqual(read_only.is_write_allowed("Sales Invoice", "read"), (True, ""))
+        self.assertEqual(read_only.is_write_allowed("Nexova AI Settings", "write"), (True, ""))
+
+        with self.assertRaises(Exception):
+            read_only.enforce_write_allowed(types.SimpleNamespace(doctype="Sales Invoice"), "before_save")
+
+    def test_read_only_guard_skips_migrate_and_patch_operations(self) -> None:
+        cache = FakeCache()
+        _install_fake_frappe(cache)
+
+        import frappe
+
+        settings_module = importlib.import_module("nexova_ai.assistant.settings")
+        read_only = importlib.reload(importlib.import_module("nexova_ai.assistant.read_only"))
+        read_only.get_settings = lambda: settings_module.AssistantSettings(
+            subscription_status="Suspended",
+            subscription_enforcement_enabled=True,
+        )
+
+        frappe.flags.in_migrate = True
+        read_only.enforce_write_allowed(types.SimpleNamespace(doctype="Sales Invoice"), "before_save")
 
     def test_rate_limit_allows_until_configured_minute_limit(self) -> None:
         cache = FakeCache()
