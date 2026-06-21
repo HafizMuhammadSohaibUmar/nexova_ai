@@ -147,7 +147,7 @@ class ProductionControlsTest(unittest.TestCase):
 
     def test_vocabulary_normalizes_voice_and_multilingual_phrases(self) -> None:
         from nexova_ai.assistant.intent import detect_intent, detect_language, normalize_text
-        from nexova_ai.assistant.vocabulary import contains_phrase
+        from nexova_ai.assistant.vocabulary import contains_phrase, fuzzy_match_score
 
         self.assertIn("receivables", normalize_text("pending receiveables"))
         self.assertEqual(detect_intent("what are my pending receiveables"), "receivables_summary")
@@ -155,6 +155,40 @@ class ProductionControlsTest(unittest.TestCase):
         self.assertEqual(detect_language("kitne customers hain"), "ur-roman")
         self.assertTrue(contains_phrase("customer list kholo", "navigation"))
         self.assertTrue(contains_phrase("\u06a9\u062a\u0646\u06d2 customers", "count"))
+        self.assertLess(
+            fuzzy_match_score("customer list kholo", "Sales Invoice List", ("sales invoice",)),
+            45,
+        )
+        self.assertGreaterEqual(
+            fuzzy_match_score("customer list kholo", "Customer List", ("customer", "customers")),
+            45,
+        )
+
+    def test_navigation_prefers_specific_business_terms_over_generic_words(self) -> None:
+        cache = FakeCache()
+        _install_fake_frappe(cache)
+
+        navigation = importlib.reload(importlib.import_module("nexova_ai.assistant.navigation"))
+        navigation.find_specific_document = lambda question: None
+        navigation.can_read_doctype = lambda doctype: True
+
+        sales_invoice = navigation.resolve_navigation("sales invoice kholo")
+        self.assertEqual(sales_invoice.data["action"], "navigate")
+        self.assertEqual(sales_invoice.data["route"], ["List", "Sales Invoice"])
+
+        customer_list = navigation.resolve_navigation("customer list kholo")
+        self.assertEqual(customer_list.data["action"], "navigate")
+        self.assertEqual(customer_list.data["route"], ["List", "Customer"])
+
+        stock_ledger = navigation.resolve_navigation("stock ledger report open karo")
+        self.assertEqual(stock_ledger.data["action"], "navigate")
+        self.assertEqual(stock_ledger.data["route"], ["query-report", "Stock Ledger"])
+
+        unpaid_invoices = navigation.resolve_navigation("open sales invoice list and show unpaid invoices")
+        self.assertEqual(unpaid_invoices.data["action"], "navigate")
+        self.assertEqual(unpaid_invoices.data["route"], ["List", "Sales Invoice"])
+        self.assertEqual(unpaid_invoices.data["route_options"]["docstatus"], 1)
+        self.assertEqual(unpaid_invoices.data["route_options"]["outstanding_amount"], [">", 0])
 
 
 if __name__ == "__main__":

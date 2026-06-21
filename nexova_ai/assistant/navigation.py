@@ -73,6 +73,14 @@ NAVIGATION_REGISTRY: tuple[NavigationTarget, ...] = (
         aliases=("accounts receivable", "receivables report", "outstanding receivable"),
     ),
     NavigationTarget(
+        name="stock_ledger_report",
+        label="Stock Ledger Report",
+        route=("query-report", "Stock Ledger"),
+        category="report",
+        required_doctype="Stock Ledger Entry",
+        aliases=("stock ledger", "stock movement", "inventory ledger"),
+    ),
+    NavigationTarget(
         name="accounts_payable_report",
         label="Accounts Payable Report",
         route=("query-report", "Accounts Payable"),
@@ -86,7 +94,7 @@ NAVIGATION_REGISTRY: tuple[NavigationTarget, ...] = (
         route=("query-report", "General Ledger"),
         category="report",
         required_doctype="GL Entry",
-        aliases=("general ledger", "ledger", "gl report"),
+        aliases=("general ledger", "gl report", "account ledger"),
     ),
 )
 
@@ -114,10 +122,10 @@ def resolve_navigation(question: str):
         )
 
     matches = [
-        target
+        (fuzzy_match_score(text, target.label, target.aliases), target)
         for target in NAVIGATION_REGISTRY
-        if fuzzy_match_score(text, target.label, target.aliases) >= 45
     ]
+    matches = [(score, target) for score, target in matches if score >= 45]
 
     if not matches:
         dynamic_matches = find_navigation_routes(question)
@@ -132,8 +140,8 @@ def resolve_navigation(question: str):
         )
 
     readable = [
-        target
-        for target in matches
+        (score, target)
+        for score, target in matches
         if target.required_doctype is None or can_read_doctype(target.required_doctype)
     ]
 
@@ -145,15 +153,18 @@ def resolve_navigation(question: str):
             data={"type": "navigation", "action": "denied"},
         )
 
-    if len(readable) > 1:
-        labels = ", ".join(target.label for target in readable[:5])
+    readable = sorted(readable, key=lambda item: item[0], reverse=True)
+    best_score, best_target = readable[0]
+
+    if len(readable) > 1 and readable[1][0] >= best_score - 20:
+        labels = ", ".join(target.label for _, target in readable[:5])
         return response(
             f"I found multiple matching areas: {labels}. Please be more specific.",
             intent="navigation",
-            data={"type": "navigation", "action": "clarify", "matches": [target.name for target in readable]},
+            data={"type": "navigation", "action": "clarify", "matches": [target.name for _, target in readable]},
         )
 
-    target = readable[0]
+    target = best_target
     route_options = _route_options_for_question(question, target.category)
     return response(
         f"Opening {target.label}.",
@@ -193,11 +204,15 @@ def _navigation_response(matches):
 
 
 def _route_options_for_question(question: str, category: str) -> dict:
-    if category != "report":
-        return {}
-
     text = normalize_text(question)
     options = {}
+    if "unpaid" in text or "outstanding" in text or "pending" in text:
+        options["docstatus"] = 1
+        options["outstanding_amount"] = [">", 0]
+
+    if category != "report":
+        return options
+
     if "today" in text or "aaj" in text:
         options["from_date"] = "Today"
         options["to_date"] = "Today"

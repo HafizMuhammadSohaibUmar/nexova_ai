@@ -4,6 +4,23 @@ import re
 from difflib import SequenceMatcher
 
 
+GENERIC_MATCH_TOKENS = {
+    "list",
+    "report",
+    "page",
+    "module",
+    "dashboard",
+    "open",
+    "show",
+    "go",
+    "to",
+    "karo",
+    "kholo",
+    "dikhao",
+    "dikhado",
+}
+
+
 PHRASE_GROUPS: dict[str, tuple[str, ...]] = {
     "navigation": (
         "open",
@@ -316,8 +333,12 @@ def fuzzy_match_score(text: str, label: str, aliases: tuple[str, ...]) -> int:
             best = max(best, 100 + len(candidate))
             continue
 
-        candidate_tokens = set(candidate.split())
-        text_tokens = set(normalized_text.split())
+        candidate_tokens = {
+            token for token in candidate.split() if token not in GENERIC_MATCH_TOKENS
+        }
+        text_tokens = {
+            token for token in normalized_text.split() if token not in GENERIC_MATCH_TOKENS
+        }
         if candidate_tokens and candidate_tokens <= text_tokens:
             best = max(best, 80 + len(candidate_tokens))
             continue
