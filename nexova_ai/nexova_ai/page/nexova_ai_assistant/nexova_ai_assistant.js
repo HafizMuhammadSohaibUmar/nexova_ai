@@ -17,8 +17,12 @@ frappe.pages["nexova-ai-assistant"].on_page_load = function (wrapper) {
     recognition: null,
     recognitionLanguage: null,
     supportsServerStt: false,
-    mediaRecorder: null,
-    audioChunks: [],
+    audioContext: null,
+    mediaStream: null,
+    recorderSource: null,
+    recorderProcessor: null,
+    recordingBuffers: [],
+    recordingSampleRate: 16000,
     ttsEnabled: true,
     voiceEnabled: true,
   };
@@ -98,7 +102,7 @@ frappe.pages["nexova-ai-assistant"].on_page_load = function (wrapper) {
   });
 
   function toggleServerRecording() {
-    if (!navigator.mediaDevices || !window.MediaRecorder) {
+    if (!navigator.mediaDevices || !window.AudioContext && !window.webkitAudioContext) {
       frappe.show_alert({
         message: __("Audio recording is not supported in this browser."),
         indicator: "orange",
@@ -106,31 +110,34 @@ frappe.pages["nexova-ai-assistant"].on_page_load = function (wrapper) {
       return;
     }
 
-    if (state.mediaRecorder && state.mediaRecorder.state === "recording") {
-      state.mediaRecorder.stop();
+    if (state.listening) {
+      stopServerRecording();
       return;
     }
 
     navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
-      state.audioChunks = [];
-      state.mediaRecorder = new MediaRecorder(stream);
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      const audioContext = new AudioContextClass();
+      const source = audioContext.createMediaStreamSource(stream);
+      const processor = audioContext.createScriptProcessor(4096, 1, 1);
 
-      state.mediaRecorder.ondataavailable = function (event) {
-        if (event.data && event.data.size) {
-          state.audioChunks.push(event.data);
+      state.mediaStream = stream;
+      state.audioContext = audioContext;
+      state.recorderSource = source;
+      state.recorderProcessor = processor;
+      state.recordingBuffers = [];
+      state.recordingSampleRate = audioContext.sampleRate;
+
+      processor.onaudioprocess = function (event) {
+        if (!state.listening) {
+          return;
         }
+        state.recordingBuffers.push(new Float32Array(event.inputBuffer.getChannelData(0)));
       };
 
-      state.mediaRecorder.onstop = function () {
-        stream.getTracks().forEach(function (track) {
-          track.stop();
-        });
-        state.listening = false;
-        $mic.removeClass("active");
-        transcribeServerAudio();
-      };
+      source.connect(processor);
+      processor.connect(audioContext.destination);
 
-      state.mediaRecorder.start();
       state.listening = true;
       $mic.addClass("active");
       frappe.show_alert({
@@ -145,14 +152,48 @@ frappe.pages["nexova-ai-assistant"].on_page_load = function (wrapper) {
     });
   }
 
+  function stopServerRecording() {
+    const processor = state.recorderProcessor;
+    const source = state.recorderSource;
+    const audioContext = state.audioContext;
+    const stream = state.mediaStream;
+
+    state.listening = false;
+    $mic.removeClass("active");
+
+    if (processor) {
+      processor.disconnect();
+      processor.onaudioprocess = null;
+    }
+    if (source) {
+      source.disconnect();
+    }
+    if (stream) {
+      stream.getTracks().forEach(function (track) {
+        track.stop();
+      });
+    }
+    if (audioContext && audioContext.state !== "closed") {
+      audioContext.close();
+    }
+
+    state.recorderProcessor = null;
+    state.recorderSource = null;
+    state.audioContext = null;
+    state.mediaStream = null;
+
+    transcribeServerAudio();
+  }
+
   function transcribeServerAudio() {
-    if (!state.audioChunks.length) {
+    if (!state.recordingBuffers.length) {
       return;
     }
 
-    const audioBlob = new Blob(state.audioChunks, { type: "audio/webm" });
+    const audioBlob = encodeWavBlob(state.recordingBuffers, state.recordingSampleRate, 16000);
+    state.recordingBuffers = [];
     const formData = new FormData();
-    formData.append("audio", audioBlob, "voice.webm");
+    formData.append("audio", audioBlob, "voice.wav");
     setLoading(true);
 
     fetch("/api/method/nexova_ai.api.transcribe_audio", {
@@ -180,6 +221,80 @@ frappe.pages["nexova-ai-assistant"].on_page_load = function (wrapper) {
     }).finally(function () {
       setLoading(false);
     });
+  }
+
+  function encodeWavBlob(buffers, inputSampleRate, outputSampleRate) {
+    const merged = mergeAudioBuffers(buffers);
+    const samples = downsampleAudio(merged, inputSampleRate, outputSampleRate);
+    const wav = new ArrayBuffer(44 + samples.length * 2);
+    const view = new DataView(wav);
+
+    writeAscii(view, 0, "RIFF");
+    view.setUint32(4, 36 + samples.length * 2, true);
+    writeAscii(view, 8, "WAVE");
+    writeAscii(view, 12, "fmt ");
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, outputSampleRate, true);
+    view.setUint32(28, outputSampleRate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    writeAscii(view, 36, "data");
+    view.setUint32(40, samples.length * 2, true);
+
+    let offset = 44;
+    for (let i = 0; i < samples.length; i++) {
+      const sample = Math.max(-1, Math.min(1, samples[i]));
+      view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
+      offset += 2;
+    }
+
+    return new Blob([view], { type: "audio/wav" });
+  }
+
+  function mergeAudioBuffers(buffers) {
+    const length = buffers.reduce(function (total, buffer) {
+      return total + buffer.length;
+    }, 0);
+    const merged = new Float32Array(length);
+    let offset = 0;
+    buffers.forEach(function (buffer) {
+      merged.set(buffer, offset);
+      offset += buffer.length;
+    });
+    return merged;
+  }
+
+  function downsampleAudio(samples, inputSampleRate, outputSampleRate) {
+    if (inputSampleRate === outputSampleRate) {
+      return samples;
+    }
+
+    const ratio = inputSampleRate / outputSampleRate;
+    const length = Math.round(samples.length / ratio);
+    const result = new Float32Array(length);
+    let inputOffset = 0;
+
+    for (let i = 0; i < length; i++) {
+      const nextOffset = Math.round((i + 1) * ratio);
+      let total = 0;
+      let count = 0;
+      for (let j = inputOffset; j < nextOffset && j < samples.length; j++) {
+        total += samples[j];
+        count++;
+      }
+      result[i] = count ? total / count : 0;
+      inputOffset = nextOffset;
+    }
+
+    return result;
+  }
+
+  function writeAscii(view, offset, text) {
+    for (let i = 0; i < text.length; i++) {
+      view.setUint8(offset + i, text.charCodeAt(i));
+    }
   }
 
   function askQuestion(rawQuestion) {
